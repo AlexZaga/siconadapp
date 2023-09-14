@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ImageBackground, StyleSheet, Text, View, TextInput, Modal, TouchableOpacity, Platform } from 'react-native'
+import { ImageBackground, StyleSheet, Text, View, TextInput, TouchableOpacity, Platform } from 'react-native'
 import Spinner from '../components/Spinner'
 import { APP_API_URL, APP_API_LOGIN, APP_BEARER_KEY } from '../../assets/js/globals'
 import { Storage } from '../components/Storage'

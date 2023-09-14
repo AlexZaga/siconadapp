@@ -1,7 +1,6 @@
 import React, { useState } from "react"
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native"
 import { APP_API_URL, APP_API_LOGOUT, APP_BEARER_KEY } from '../../assets/js/globals'
-import Spinner from "./Spinner"
 import { Storage } from '../components/Storage'
 import { useNavigation } from '@react-navigation/native'
 
@@ -13,12 +12,10 @@ export default function Header({ nombre, matricula, ID, cde, grupo, plan, correo
     const [ _cde ] = useState(cde)
     const [ _grupo ] = useState(grupo)
     const [ _plan ] = useState(plan)
-    const [ loading, setLoading ] = useState(false)
     const [ avatarMale ] = useState({uri: new Storage().getAvatarMale()})
     const { navigate } = useNavigation()
 
     async function handleClose(){
-        setLoading(true)
         let _url = APP_API_URL().concat(APP_API_LOGOUT())
         let _result = await fetch(_url, {
           method: "POST",
@@ -33,34 +30,27 @@ export default function Header({ nombre, matricula, ID, cde, grupo, plan, correo
           })
         })
         let _data = await _result.json()
-        setLoading(false)
+        console.log(_data)
         navigate('Bienvenido')
     }
 
-    if(loading){
-        return (
-            <Spinner />
-        )
-    }else{
-        return (
-            <View style={styles.container}>
-                <View>
-                    <Image source={avatarMale} style={styles.image}/>
-                </View>
-                <View>
-                    <Text style={styles.title}>{ _nombre }</Text>
-                    <Text style={styles.subtitle}>{ _grupo }</Text>
-                    <Text style={styles.subtitle}>{ _plan }</Text>
-                </View>
-                <View>
-                    <TouchableOpacity style={styles.buttonClose} onPress={handleClose}>
-                        <Text style={styles.buttonText}>Cerrar</Text>
-                    </TouchableOpacity>
-                </View>
+    return (
+        <View style={styles.container}>
+            <View>
+                <Image source={avatarMale} style={styles.image}/>
             </View>
-        )
-
-    }
+            <View>
+                <Text style={styles.title}>{ _nombre }</Text>
+                <Text style={styles.subtitle}>{ _grupo }</Text>
+                <Text style={styles.subtitle}>{ _cde }</Text>
+            </View>
+            <View>
+                <TouchableOpacity style={styles.buttonClose} onPress={handleClose}>
+                    <Text style={styles.buttonText}>Terminar</Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+    )
 }
 
 const styles = StyleSheet.create({
@@ -99,7 +89,9 @@ const styles = StyleSheet.create({
     buttonClose: {
         padding: 5,
         borderRadius: 7,
-        backgroundColor: '#009999'
+        backgroundColor: '#009999',
+        borderWidth: 1,
+        borderColor: '#000'
     },
     buttonText: {
         fontSize: 13,
