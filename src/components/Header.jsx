@@ -4,14 +4,14 @@ import { APP_API_URL, APP_API_LOGOUT, APP_BEARER_KEY } from '../../assets/js/glo
 import { Storage } from '../components/Storage'
 import { useNavigation } from '@react-navigation/native'
 
-export default function Header({ nombre, matricula, ID, cde, grupo, plan, correo }){
-    const [ id ] = useState(ID)
+export default function Header({ nombre, matricula, cde, grupo, plan, correo }){
     const [ _nombre ] = useState(nombre)
     const [ _matricula ] = useState(matricula)
     const [ _password ] = useState(correo)
     const [ _cde ] = useState(cde)
     const [ _grupo ] = useState(grupo)
     const [ _plan ] = useState(plan)
+    const [ _correo ] = useState(correo)
     const [ avatarMale ] = useState({uri: new Storage().getAvatarMale()})
     const { navigate } = useNavigation()
 

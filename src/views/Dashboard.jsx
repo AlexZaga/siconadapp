@@ -1,65 +1,31 @@
-import React, { useState, useEffect } from "react"
-import { StyleSheet, Text, View } from "react-native"
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
+import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { useRoute } from '@react-navigation/native'
-import { APP_API_URL, APP_API_ASIGNATURAS, APP_BEARER_KEY } from '../../assets/js/globals'
-import Header from "../components/Header"
+import Asignaturas from './Asignaturas' 
+import CalendarioPago from './CalendarioPagos'
+import EdoCta from './EstadoCuenta'
 
-export default function Dashboard({ navigation }) {
-  const { params: { _nombre, _matricula, _cde, _grupo, _plan, _id, _correo } } = useRoute('Detail')
-  const [ _data, setData] = useState([])
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
-  useEffect(() => {
-    const asignaturas = async() => {
-      try {
-        let _url = APP_API_URL().concat(APP_API_ASIGNATURAS() + "/").concat(_plan)
-        let _result = await fetch(_url, {
-          method: "GET",
-          cache: "no-cache",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": APP_BEARER_KEY()
-          }
-        })
-        let _res = await _result.json()
-        setData(_res.data)
-        console.log(_data[0].correo)
-      } catch (error) {
-        setData(error)
-        console.log(error)
-      }
-    }
-  
-    asignaturas()
-  }, [])
-  
+export default function Dashboard() {
+  const { params: { _nombre, _matricula, _cde, _grupo, _plan, _id, _correo } } = useRoute('Login')
+
   return (
-    <>
-      <View style={styles.container}>
-        <Header nombre={_nombre} matricula={_matricula} ID={_id} grupo={_grupo} plan={_plan} correo={_correo} cde={_cde}/>
-      </View>
-      {
-        _data.status === '404'
-        ? <View style={styles.subContainer}><Text style={styles.subContainerText}>Informaci&oacute;n no disponible</Text></View>
-        : <View style={styles.subContainer}><Text style={styles.subContainerText}>HOLA DKJHKHAKLDHBALJ</Text></View>
-      }
-    </>
-  )
+    <SafeAreaProvider>
+      <Stack.Navigator initialRouteName="Asignaturas" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Asignaturas">
+        {() => (
+          <Tab.Navigator initialRouteName="Dashboard" screenOptions={{ headerShown: false }}>
+            <Tab.Screen name="Dashboard" children={() => { return(<Asignaturas nombre={_nombre} matricula={_matricula} cde={_cde} grupo={_grupo} plan={_plan} correo={_correo}/>)}} />
+            <Tab.Screen name="CalendarioPago" component={CalendarioPago} />
+            <Tab.Screen name="EdoCta" component={EdoCta} />
+          </Tab.Navigator>
+        )}
+        </Stack.Screen>
+        <Stack.Screen name="EdoCta" component={EdoCta} />
+      </Stack.Navigator>
+    </SafeAreaProvider>
+  );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    backgroundColor: '#009999'
-  },
-  subContainer: {
-    flex: 6,
-    backgroundColor: '#009999',
-    alignItems: "center"
-  },
-  subContainerText: {
-    color: 'gainsboro',
-    fontSize: 20,
-    fontWeight: "bold",
-  }
-})
