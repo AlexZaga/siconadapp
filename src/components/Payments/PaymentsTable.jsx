@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, Modal, Pressable } from "react-native";
 import { API_PATHS, API_PAYMENT_BASE_URL } from "../../../assets/js/globals";
 import axios from "axios"
 import { getPaymentTokenData, getSessionData } from "../../helpers/AStorage";
@@ -7,7 +7,9 @@ import Spinner from "../../components/Spinner";
 
 const PaymentsTable = () => {
     const [paymentsData, setPaymentsData] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+    const [paymentModalData, setPaymentModalData] = useState({})
 
     const sortDates = (a, b) => {
         var d1 = new Date(a.fecha)
@@ -46,6 +48,107 @@ const PaymentsTable = () => {
         console.log("Loaded Data from Payments");
     }, []);
 
+
+    useEffect(() => {
+        console.log(paymentModalData)
+    }, [paymentModalData]);
+
+
+    function openPaymentDialog(item) {
+        console.log("clicked")
+        setPaymentModalData(item);
+        setPaymentModalVisible(true);
+    }
+
+    const PaymentModal = () => {
+        return (
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={paymentModalVisible}
+                onRequestClose={() => setPaymentModalVisible(!paymentModalVisible)}>
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        <Text style={styles.headerText}>{paymentModalData.concepto}</Text>
+                        <View style={styles.divisor} />
+                        <View style={styles.modalContent}>
+                            <View style={styles.modalRow}>
+                                <Text style={styles.modalTextBold}>
+                                    Fecha Periodo:&nbsp;
+                                </Text>
+                                <Text style={styles.modalText}>
+                                    {paymentModalData.fecha}
+                                </Text>
+                            </View>
+                            <View style={styles.modalRow}>
+                                <Text style={styles.modalTextBold}>
+                                    Fecha Vencimiento:&nbsp;
+                                </Text>
+                                <Text style={styles.modalText}>
+                                    {paymentModalData.vencimiento}
+                                </Text>
+                            </View>
+                            <View style={styles.modalRow}>
+                                <Text>
+                                    <Text style={styles.modalText}>
+                                        Esta acci&oacute;n confirma el pago adeudado del mes de&nbsp;
+                                    </Text>
+                                    <Text style={styles.modalTextBold}>
+                                        {paymentModalData.mes}&nbsp;
+                                    </Text>
+                                    <Text style={styles.modalText}>
+                                        por un monto de&nbsp;
+                                    </Text>
+                                    <Text style={styles.modalTextBold}>
+                                        ${paymentModalData.monto ? paymentModalData.monto.toLocaleString() : "0.0"} MXN,&nbsp;
+                                    </Text>
+                                    <Text style={styles.modalText}>
+                                        con folio de pago&nbsp;
+                                    </Text>
+                                    <Text style={styles.modalTextBold}>
+                                        {paymentModalData.pagoId}
+                                    </Text>
+                                </Text>
+                            </View>
+                        </View>
+                        <View style={{ width: "100%", backgroundColor: "gray", height: "1%" }} />
+                        <View 
+                            style={{ 
+                                backgroundColor: "white", 
+                                width: "100%", 
+                                flexDirection: "row", 
+                                justifyContent: "center", alignItems: "center" }}>
+                            <TouchableOpacity
+                                activeOpacity={0.5}
+                                style={{ padding: 8 }}>
+                                <Text style={{
+                                    color: "#0092b7",
+                                    fontSize: 16,
+                                    margin: 8,
+                                    textTransform: "uppercase"}}>
+                                    Realizar Pago
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                activeOpacity={0.5}
+                                style={{ padding: 8}}>
+                                <Text style={{
+                                    color: "#960018",
+                                    fontSize: 16,
+                                    margin: 8,
+                                    textTransform: "uppercase"
+                                }}>
+                                    Cancelar Pago
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+        );
+    }
+
+
     const Item = ({ paymentData }) => {
         return (
             <TouchableOpacity
@@ -53,8 +156,14 @@ const PaymentsTable = () => {
                 style={styles.listButton}>
                 <View style={{ flexDirection: "column", flexGrow: 1 }}>
                     <Text style={{ flex: 1, fontSize: 18 }}>{paymentData.concepto}</Text>
-                    <Text style={{ flex: 1, fontSize: 12 }}>{paymentData.fecha} - {paymentData.estatusPago}</Text>
+                    <Text style={{ flex: 1, fontSize: 12 }}>Periodo: {paymentData.fecha} - ${paymentData.monto.toLocaleString("es-MX")}</Text>
                 </View>
+                {
+                    paymentData.estatusPago === "pendiente" ?
+                        <TouchableOpacity activeOpacity={0.5} style={{ marginEnd: 12 }} onPress={() => { openPaymentDialog(paymentData) }}>
+                            <Image source={require("../../../assets/user_payment.png")} style={{ tintColor: "#177245", width: 28, height: 28 }} />
+                        </TouchableOpacity> : null
+                }
                 <Image source={require("../../../assets/info.png")} style={{ tintColor: "gray", width: 28, height: 28 }} />
             </TouchableOpacity>
         )
@@ -68,6 +177,7 @@ const PaymentsTable = () => {
                 isLoading ?
                     <Spinner /> :
                     <>
+                        <PaymentModal />
                         <FlatList
                             ItemSeparatorComponent={<View style={{ height: "3%", backgroundColor: "gray" }} />}
                             scrollEnabled={false}
@@ -83,7 +193,7 @@ const PaymentsTable = () => {
                         </TouchableOpacity>
                     </>
             }
-            
+
         </View>
     )
 }
@@ -101,7 +211,7 @@ const styles = StyleSheet.create({
     headerText: {
         textAlign: "left",
         fontWeight: "bold",
-        fontSize: 16,
+        fontSize: 18,
         marginBottom: 12
     },
     divisor: {
@@ -118,6 +228,46 @@ const styles = StyleSheet.create({
         paddingStart: 12,
         paddingEnd: 12
     },
+    centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 0
+    },
+    modalView: {
+        margin: 20,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 12,
+        width: "80%",
+        height: "35%",
+        alignItems: 'flex-start',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    modalContent: {
+        flex: 1, flexDirection: "column",
+        height: "40%"
+    },
+    modalRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        marginTop: 8,
+        marginBottom: 8
+    },
+    modalTextBold: {
+        fontSize: 16,
+        fontWeight: "bold"
+    },
+    modalText: {
+        fontSize: 16
+    }
 });
 
 export default PaymentsTable;

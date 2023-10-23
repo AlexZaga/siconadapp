@@ -6,7 +6,8 @@ const API_PATHS = {
     "news": "/comunicados/all",
     "plans": "/planes/fetch",
     "subjects": "/asignaturas/plan/",
-    "payments": "/pagos/get_pagos_alumno/"
+    "payments": "/pagos/get_pagos_alumno/",
+    "acc_status": "/indicadores_cajas/get_estado_cuenta_alumno"
 }
 
 const background_image = "https://res.cloudinary.com/interprocsysmex/image/upload/v1673644266/ahjende/ofertaeducativa/ofedu-img8_dqbsre.jpg"
