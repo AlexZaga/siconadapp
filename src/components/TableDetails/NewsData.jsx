@@ -1,30 +1,34 @@
-import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, Modal } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, Image, Modal } from "react-native";
+import { DataTable } from 'react-native-paper';
+import { getSessionData, getTokenData } from "../../helpers/AStorage";
 import { API_BASE_URL, API_PATHS } from "../../../assets/js/globals";
-import axios from "axios"
-import { getTokenData } from "../../helpers/AStorage";
-import Spinner from "../../components/Spinner";
+import axios from "axios";
+import Spinner from "../Spinner";
+import { TouchableOpacity } from "react-native-gesture-handler";
 import BoldSimpleText from "../Texts/BoldSimple";
-import { useNavigation, StackActions } from '@react-navigation/native'
 
-const NewsTable = () => {
-    const [newsData, setNewsData] = useState([]);
+const NewsDataTable = () => {
+    const [newsList, setNewsList] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [newsModalVisible, setNewsModalVisible] = useState(false);
     const [selectedNewsItem, setSelectedNewsItem] = useState({});
-    const { dispatch } = useNavigation()
+    const [page, setPage] = useState(0);
+
+
+    const from = page * 5;
+    const to = Math.min((page + 1) * 5, newsList.length);
 
     useEffect(() => {
         (async () => {
             setIsLoading(true);
             const newsData = await fetchNews();
             if (newsData.status === 200) {
-                const sortedNews = newsData.data.data.sort(sortDates).slice(0, 3);
-                setNewsData(sortedNews)
+                const sortedNews = newsData.data.data.sort(sortDates)
+                setNewsList(sortedNews)
             }
             setIsLoading(false);
         })();
-        console.log("Loaded Data from News");
     }, []);
 
 
@@ -51,7 +55,7 @@ const NewsTable = () => {
         }
     }
 
-    function openNewsModal(item){
+    function openNewsModal(item) {
         const actualDate = new Date(item.fechaorigen);
         const validMonth = actualDate.getMonth() + 1;
         const formattedDate = actualDate.getDate() + "/" + validMonth + "/" + actualDate.getFullYear()
@@ -64,26 +68,6 @@ const NewsTable = () => {
     const handleCloseNewsModal = () => {
         setSelectedNewsItem({});
         setNewsModalVisible(false);
-    }
-
-    const Item = ({ newsData }) => {
-        return (
-            <View style={{ 
-                flexDirection: "row", 
-                justifyContent:"space-between"}}>
-                <TouchableOpacity
-                    activeOpacity={0.5}
-                    style={styles.listButton}>
-                    <Text style={{ flex: 1, fontSize: 18 }}>{newsData.titulo}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                style={{ justifyContent: "center", flex: 1 }}
-                    activeOpacity={0.5} 
-                    onPress={() => { openNewsModal(newsData) }}>
-                    <Image source={require("../../../assets/info.png")} style={{ tintColor: "gray", width: 28, height: 28 }} />
-                </TouchableOpacity>
-            </View>
-        )
     }
 
     const NewsInfoModal = () => {
@@ -99,9 +83,9 @@ const NewsTable = () => {
                         <View style={styles.divisor} />
                         <View style={styles.modalContent}>
                             <View style={styles.modalRow}>
-                                <BoldSimpleText 
-                                    boldText={"Fecha:"} 
-                                    normalText={selectedNewsItem.formattedDate} 
+                                <BoldSimpleText
+                                    boldText={"Fecha:"}
+                                    normalText={selectedNewsItem.formattedDate}
                                     fontSize={16} />
                             </View>
                             <View style={styles.modalRow}>
@@ -122,7 +106,7 @@ const NewsTable = () => {
                             <TouchableOpacity
                                 activeOpacity={0.5}
                                 onPress={handleCloseNewsModal}
-                                style={{ padding: 8, width: "80%", justifyContent:"center", alignItems: "center" }}>
+                                style={{ padding: 8, width: "100%", justifyContent: "center", alignItems: "center" }}>
                                 <Text style={{
                                     color: "#0092b7",
                                     fontSize: 16,
@@ -141,30 +125,45 @@ const NewsTable = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.headerText}>Comunicados</Text>
+            <Text style={styles.headerText}>Comunicados Presidencia</Text>
             <View style={styles.divisor} />
             <NewsInfoModal />
             {
                 isLoading ?
                     <Spinner /> :
-                    <>
-                        <FlatList
-                            ItemSeparatorComponent={<View style={{ height: "3%", backgroundColor: "gray" }} />}
-                            scrollEnabled={false}
-                            style={{ height: "100%" }}
-                            data={newsData}
-                            renderItem={({ item }) => <Item newsData={item} />}
-                            keyExtractor={item => item._id} />
-                        <TouchableOpacity 
-                            onPress={() => dispatch(StackActions.push("TableDetails", { component_to_render: "news" }))}
-                            style={{ marginTop: 18, marginBottom: 12, justifyContent: "center", alignItems: "center" }}>
-                            <Text style={{ color: "#0092b7", fontWeight: "bold" }}>
-                                VER M&Aacute;S
-                            </Text>
-                        </TouchableOpacity>
-                    </>
-            }
+                    <DataTable>
+                        <DataTable.Header>
+                            <DataTable.Title textStyle={styles.tableHeader}>Nombre del comunicado</DataTable.Title>
+                            <DataTable.Title textStyle={styles.tableHeader}>
+                                Informaci&oacute;n
+                            </DataTable.Title>
+                        </DataTable.Header>
 
+                        {newsList.slice(from, to).map((item) => (
+                            <DataTable.Row key={item._id} onPress={(i) => { openNewsModal(item) }}>
+                                <DataTable.Cell>
+                                    <Text>
+                                        {item.titulo}
+                                    </Text>
+                                </DataTable.Cell>
+                                <DataTable.Cell>
+                                    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                                        <Image source={require("../../../assets/info.png")} style={{ tintColor: "gray", width: 28, height: 28 }} />
+                                    </View>
+                                </DataTable.Cell>
+                            </DataTable.Row>
+                        ))}
+
+                        <DataTable.Pagination
+                            page={page}
+                            numberOfPages={Math.ceil(newsList.length / 5)}
+                            onPageChange={(page) => setPage(page)}
+                            label={`${from + 1}-${to} of ${newsList.length}`}
+                            numberOfItemsPerPage={5}
+                            showFastPaginationControls
+                        />
+                    </DataTable>
+            }
         </View>
     )
 }
@@ -172,33 +171,26 @@ const NewsTable = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        borderColor: "gainsboro",
-        borderWidth: 2,
-        width: "90%",
-        marginTop: 24,
-        marginBottom: 32,
-        padding: 12
+        margin: 12
     },
     headerText: {
         textAlign: "left",
         fontWeight: "bold",
-        fontSize: 18,
+        fontSize: 20,
         marginBottom: 12
     },
     divisor: {
         backgroundColor: "#0092b7",
-        height: "2%",
-        width: "40%"
+        height: "1%",
+        width: "40%",
+        marginBottom: 12
     },
-    listButton: {
-        flexDirection: "row",
-        minHeight: 42,
-        margin: 8,
-        flex: 4,
-        alignItems: "center",
-        justifyContent: "center",
-        paddingStart: 12,
-        paddingEnd: 12
+    tableHeader: {
+        fontSize: 16,
+        fontWeight: "bold",
+        flexWrap: "wrap",
+        flexShrink: 1,
+        textAlign: "center"
     },
     centeredView: {
         flex: 1,
@@ -233,6 +225,6 @@ const styles = StyleSheet.create({
         marginTop: 8,
         marginBottom: 8
     }
-});
+})
 
-export default NewsTable;
+export default NewsDataTable;
