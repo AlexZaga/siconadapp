@@ -1,13 +1,30 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, Modal } from "react-native";
 import { API_BASE_URL, API_PATHS } from "../../../assets/js/globals";
 import axios from "axios"
 import { getTokenData } from "../../helpers/AStorage";
 import Spinner from "../../components/Spinner";
+import BoldSimpleText from "../Texts/BoldSimple";
 
 const NewsTable = () => {
     const [newsData, setNewsData] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [newsModalVisible, setNewsModalVisible] = useState(false);
+    const [selectedNewsItem, setSelectedNewsItem] = useState({});
+
+    useEffect(() => {
+        (async () => {
+            setIsLoading(true);
+            const newsData = await fetchNews();
+            if (newsData.status === 200) {
+                const sortedNews = newsData.data.data.sort(sortDates).slice(0, 3);
+                setNewsData(sortedNews)
+            }
+            setIsLoading(false);
+        })();
+        console.log("Loaded Data from News");
+    }, []);
+
 
     const sortDates = (a, b) => {
         var d1 = new Date(a.fechaorigen)
@@ -32,34 +49,99 @@ const NewsTable = () => {
         }
     }
 
-    useEffect(() => {
-        (async () => {
-            setIsLoading(true);
-            const newsData = await fetchNews();
-            if (newsData.status === 200) {
-                const sortedNews = newsData.data.data.sort(sortDates).slice(0, 3);
-                setNewsData(sortedNews)
-            }
-            setIsLoading(false);
-        })();
-        console.log("Loaded Data from News");
-    }, []);
+    function openNewsModal(item){
+        const actualDate = new Date(item.fechaorigen);
+        const validMonth = actualDate.getMonth() + 1;
+        const formattedDate = actualDate.getDate() + "/" + validMonth + "/" + actualDate.getFullYear()
+
+        setSelectedNewsItem({ ...item, formattedDate });
+        setNewsModalVisible(true);
+
+    }
+
+    const handleCloseNewsModal = () => {
+        setSelectedNewsItem({});
+        setNewsModalVisible(false);
+    }
 
     const Item = ({ newsData }) => {
         return (
-            <TouchableOpacity
-                activeOpacity={0.5}
-                style={styles.listButton}>
-                <Text style={{ flex: 1, fontSize: 18 }}>{newsData.titulo}</Text>
-                <Image source={require("../../../assets/info.png")} style={{ tintColor: "gray", width: 28, height: 28 }} />
-            </TouchableOpacity>
+            <View style={{ 
+                flexDirection: "row", 
+                justifyContent:"space-between"}}>
+                <TouchableOpacity
+                    activeOpacity={0.5}
+                    style={styles.listButton}>
+                    <Text style={{ flex: 1, fontSize: 18 }}>{newsData.titulo}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                style={{ justifyContent: "center", flex: 1 }}
+                    activeOpacity={0.5} 
+                    onPress={() => { openNewsModal(newsData) }}>
+                    <Image source={require("../../../assets/info.png")} style={{ tintColor: "gray", width: 28, height: 28 }} />
+                </TouchableOpacity>
+            </View>
         )
+    }
+
+    const NewsInfoModal = () => {
+        return (
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={newsModalVisible}
+                onRequestClose={() => setNewsModalVisible(!newsModalVisible)}>
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        <Text style={styles.headerText}>{selectedNewsItem.titulo}</Text>
+                        <View style={styles.divisor} />
+                        <View style={styles.modalContent}>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText 
+                                    boldText={"Fecha:"} 
+                                    normalText={selectedNewsItem.formattedDate} 
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Comunicado:"}
+                                    normalText={selectedNewsItem.mensaje}
+                                    fontSize={16} />
+                            </View>
+                        </View>
+                        <View
+                            style={{
+                                backgroundColor: "white",
+                                width: "100%",
+                                flexDirection: "row",
+                                justifyContent: "center",
+                                alignItems: "center"
+                            }}>
+                            <TouchableOpacity
+                                activeOpacity={0.5}
+                                onPress={handleCloseNewsModal}
+                                style={{ padding: 8, width: "80%", justifyContent:"center", alignItems: "center" }}>
+                                <Text style={{
+                                    color: "#0092b7",
+                                    fontSize: 16,
+                                    marginTop: 8,
+                                    textTransform: "uppercase"
+                                }}>
+                                    Cerrar Informaci&oacute;n
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+        );
     }
 
     return (
         <View style={styles.container}>
             <Text style={styles.headerText}>Comunicados</Text>
             <View style={styles.divisor} />
+            <NewsInfoModal />
             {
                 isLoading ?
                     <Spinner /> :
@@ -96,7 +178,7 @@ const styles = StyleSheet.create({
     headerText: {
         textAlign: "left",
         fontWeight: "bold",
-        fontSize: 16,
+        fontSize: 18,
         marginBottom: 12
     },
     divisor: {
@@ -108,11 +190,45 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         minHeight: 42,
         margin: 8,
+        flex: 4,
         alignItems: "center",
         justifyContent: "center",
         paddingStart: 12,
         paddingEnd: 12
     },
+    centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 12
+    },
+    modalView: {
+        margin: 20,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 20,
+        width: "80%",
+        height: "35%",
+        alignItems: 'flex-start',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    modalContent: {
+        flex: 1,
+        flexDirection: "column"
+    },
+    modalRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        marginTop: 8,
+        marginBottom: 8
+    }
 });
 
 export default NewsTable;

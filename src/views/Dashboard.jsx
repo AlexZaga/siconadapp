@@ -41,7 +41,7 @@ export default function Dashboard() {
           source={t.image}
           style={styles.imageButton}
         />
-        <Text style={styles.textButton}>{t.title}</Text>
+        <Text adjustsFontSizeToFit style={styles.textButton}>{t.title}</Text>
       </TouchableOpacity>
     )
   }
@@ -77,12 +77,14 @@ export default function Dashboard() {
             contentContainerStyle={{
               flexDirection: 'row',
               flexWrap: 'wrap',
+              width: "100%"
             }}>
             <FlatList
               data={dashboardTabs}
               renderItem={({item}) => <TabItem t={item} /> }
               keyExtractor={item => item.id}
               showsHorizontalScrollIndicator={false}
+              horizontal={false}
               numColumns={dashboardTabs.length / 2}
             />
           </ScrollView>
@@ -113,8 +115,9 @@ const styles = StyleSheet.create({
     padding: 12
   },
   cardButton: {
+    flex: 1,
     backgroundColor: "white",
-    width: "30%",
+    //width: "30%",
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",

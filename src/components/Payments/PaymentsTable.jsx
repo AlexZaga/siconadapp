@@ -2,14 +2,18 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, Modal, Pressable } from "react-native";
 import { API_PATHS, API_PAYMENT_BASE_URL } from "../../../assets/js/globals";
 import axios from "axios"
-import { getPaymentTokenData, getSessionData } from "../../helpers/AStorage";
+import { getPaymentTokenData, getSessionData, getTokenData } from "../../helpers/AStorage";
 import Spinner from "../../components/Spinner";
+import BoldSimpleText from "../Texts/BoldSimple";
 
 const PaymentsTable = () => {
     const [paymentsData, setPaymentsData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [paymentModalVisible, setPaymentModalVisible] = useState(false);
-    const [paymentModalData, setPaymentModalData] = useState({})
+    const [paymentInfoModalVisible, setPaymentInfoModalVisible] = useState(false);
+    const [paymentModalData, setPaymentModalData] = useState({});
+    const [paymentInfoData, setPaymentInfoData] = useState({});
+    const [userSession, setUserSession] = useState({});
 
     const sortDates = (a, b) => {
         var d1 = new Date(a.fecha)
@@ -35,16 +39,20 @@ const PaymentsTable = () => {
         }
     }
 
-    useEffect(() => {
-        (async () => {
-            setIsLoading(true);
-            const paymentsData = await fetchPayments();
-            if (paymentsData.status === 200) {
-                const sortedPayments = paymentsData.data.data.sort(sortDates).slice(0, 3);
-                setPaymentsData(sortedPayments);
-            }
-            setIsLoading(false);
-        })();
+    async function loadPayments(){
+        setIsLoading(true);
+        const paymentsData = await fetchPayments();
+        if (paymentsData.status === 200) {
+            const sortedPayments = paymentsData.data.data.sort(sortDates).slice(0, 3);
+            setPaymentsData(sortedPayments);
+        }
+        setIsLoading(false);
+    }
+
+    useEffect( async () => {
+        await loadPayments();
+        const userData = await getSessionData();
+        setUserSession(userData);
         console.log("Loaded Data from Payments");
     }, []);
 
@@ -55,9 +63,74 @@ const PaymentsTable = () => {
 
 
     function openPaymentDialog(item) {
-        console.log("clicked")
         setPaymentModalData(item);
         setPaymentModalVisible(true);
+    }
+
+    function openPaymentInfoDialog(item) {
+        console.log(item);
+        setPaymentInfoData(item);
+        setPaymentInfoModalVisible(true);
+    }
+
+    const handleClosePayModal = () => {
+        setPaymentModalData({});
+        setPaymentModalVisible(false);
+    }
+
+    const handleCloseInfoPayModal = () => {
+        setPaymentInfoData({});
+        setPaymentInfoModalVisible(false);
+    }
+
+    const submitPayment = async () => {
+        let tipoPago =
+            paymentModalData["concepto"] === "Pago de Inscripción" ? 1
+                : paymentModalData["concepto"] === "Pago de certificación" ? 3
+                    : paymentModalData["concepto"].startsWith("Colegiatura") ? 2
+                        : 6;
+
+        //this.addPayment[["matricula"]] = this.userId;
+        //this.addPayment[["responsable"]] = this.usrName;
+        //this.addPayment[["concepto"]] = item[["concepto"]];
+        //this.addPayment[["monto_original"]] = item[["monto"]];
+        //this.addPayment[["tipo_id"]] = parseInt(_tipo);
+        //this.addPayment[["fecha_inicio"]] = this.timeStamp();
+        //this.addPayment[["fecha_fin"]] = this.timeStamp();
+        const paymentPayload = {
+            "responsable": userSession.nombre,
+            "estatus": 1,
+            "forma_id": 1,
+            "monto": paymentModalData.monto,
+            "pago_id": paymentModalData.pagoId
+        }
+
+        console.log("Payment Post Data: ");
+        console.log(paymentPayload);
+        // Configurar Spinner para este modal
+        const sptk = await getPaymentTokenData()
+        const paymentHeaders = {
+            "Authorization": `Bearer ${sptk}`
+        }
+        axios.post(API_PAYMENT_BASE_URL.concat(API_PATHS.abono), paymentPayload, { headers: paymentHeaders }).then(r => {
+            if (r.status !== 200){
+                alert("Ha ocurrido un error al realizar el abono. Intente de nuevo.");
+            }else {
+                const { autorizacion } = r.data.data;
+                const {message} = r.data;
+                if (message === "Success"){
+                    alert(`Se ha procesado correctamente el abono. Autorización: [${autorizacion}]`);
+                }else{
+                    alert(`Ha ocurrido un error al realizar el abono. ${message}`);
+                }
+            }
+        }).catch(error => {
+            console.log(error)
+        }).finally(async () => {
+            await loadPayments();
+            setPaymentModalData({});
+            setPaymentModalVisible(false);
+        });
     }
 
     const PaymentModal = () => {
@@ -73,38 +146,30 @@ const PaymentsTable = () => {
                         <View style={styles.divisor} />
                         <View style={styles.modalContent}>
                             <View style={styles.modalRow}>
-                                <Text style={styles.modalTextBold}>
-                                    Fecha Periodo:&nbsp;
-                                </Text>
-                                <Text style={styles.modalText}>
-                                    {paymentModalData.fecha}
-                                </Text>
+                                <BoldSimpleText
+                                    boldText={"Fecha Periodo:"}
+                                    normalText={paymentModalData.fecha}
+                                    fontSize={16} />
                             </View>
                             <View style={styles.modalRow}>
-                                <Text style={styles.modalTextBold}>
-                                    Fecha Vencimiento:&nbsp;
-                                </Text>
-                                <Text style={styles.modalText}>
-                                    {paymentModalData.vencimiento}
-                                </Text>
+                                <BoldSimpleText
+                                    boldText={"Fecha Vencimiento:"}
+                                    normalText={paymentModalData.vencimiento}
+                                    fontSize={16} />
                             </View>
                             <View style={styles.modalRow}>
                                 <Text>
                                     <Text style={styles.modalText}>
                                         Esta acci&oacute;n confirma el pago adeudado del mes de&nbsp;
                                     </Text>
-                                    <Text style={styles.modalTextBold}>
-                                        {paymentModalData.mes}&nbsp;
-                                    </Text>
-                                    <Text style={styles.modalText}>
-                                        por un monto de&nbsp;
-                                    </Text>
-                                    <Text style={styles.modalTextBold}>
-                                        ${paymentModalData.monto ? paymentModalData.monto.toLocaleString() : "0.0"} MXN,&nbsp;
-                                    </Text>
-                                    <Text style={styles.modalText}>
-                                        con folio de pago&nbsp;
-                                    </Text>
+                                    <BoldSimpleText
+                                        boldText={paymentModalData.mes}
+                                        normalText={"por un monto de "}
+                                        fontSize={16} />
+                                    <BoldSimpleText
+                                        boldText={`$${paymentModalData.monto ? paymentModalData.monto.toLocaleString() : "0.0"} MXN,`}
+                                        normalText={"con folio de pago "}
+                                        fontSize={16} />
                                     <Text style={styles.modalTextBold}>
                                         {paymentModalData.pagoId}
                                     </Text>
@@ -112,30 +177,35 @@ const PaymentsTable = () => {
                             </View>
                         </View>
                         <View style={{ width: "100%", backgroundColor: "gray", height: "1%" }} />
-                        <View 
-                            style={{ 
-                                backgroundColor: "white", 
-                                width: "100%", 
-                                flexDirection: "row", 
-                                justifyContent: "center", alignItems: "center" }}>
+                        <View
+                            style={{
+                                backgroundColor: "white",
+                                width: "100%",
+                                flexDirection: "row",
+                                justifyContent: "center",
+                                alignItems: "center"
+                            }}>
                             <TouchableOpacity
                                 activeOpacity={0.5}
+                                onPress={submitPayment}
                                 style={{ padding: 8 }}>
                                 <Text style={{
                                     color: "#0092b7",
                                     fontSize: 16,
-                                    margin: 8,
-                                    textTransform: "uppercase"}}>
+                                    marginTop: 8,
+                                    textTransform: "uppercase"
+                                }}>
                                     Realizar Pago
                                 </Text>
                             </TouchableOpacity>
                             <TouchableOpacity
+                                onPress={handleClosePayModal}
                                 activeOpacity={0.5}
-                                style={{ padding: 8}}>
+                                style={{ padding: 8 }}>
                                 <Text style={{
                                     color: "#960018",
                                     fontSize: 16,
-                                    margin: 8,
+                                    marginTop: 8,
                                     textTransform: "uppercase"
                                 }}>
                                     Cancelar Pago
@@ -148,11 +218,96 @@ const PaymentsTable = () => {
         );
     }
 
+    const PaymentInfoModal = () => {
+        return (
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={paymentInfoModalVisible}
+                onRequestClose={() => setPaymentInfoModalVisible(!paymentInfoModalVisible)}>
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        <Text style={styles.headerText}>{paymentInfoData.concepto}</Text>
+                        <View style={styles.divisor} />
+                        <View style={styles.modalContent}>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Folio Pago:"}
+                                    normalText={paymentInfoData.pagoId}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Mes:"}
+                                    normalText={paymentInfoData.mes}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Fecha período:"}
+                                    normalText={paymentInfoData.fecha}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Fecha vencimiento:"}
+                                    normalText={paymentInfoData.vencimiento}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Monto a Pagar:"}
+                                    normalText={`$${paymentInfoData.monto ? paymentInfoData.monto.toLocaleString() : "0.0"} MXN`}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Estatus de Pago:"}
+                                    normalText={paymentInfoData.estatusPago}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Folio autorización:"}
+                                    normalText={paymentInfoData.autorizacion}
+                                    fontSize={16} />
+                            </View>
+                        </View>
+                        <View style={{ width: "100%", backgroundColor: "gray", height: "1%" }} />
+                        <View
+                            style={{
+                                backgroundColor: "white",
+                                width: "100%",
+                                flexDirection: "row",
+                                justifyContent: "center",
+                                alignItems: "center"
+                            }}>
+                            <TouchableOpacity
+                                activeOpacity={0.5}
+                                onPress={handleCloseInfoPayModal}
+                                style={{ padding: 8 }}>
+                                <Text style={{
+                                    color: "#0092b7",
+                                    fontSize: 16,
+                                    marginTop: 8,
+                                    textTransform: "uppercase"
+                                }}>
+                                    Cerrar informaci&oacute;n
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+        );
+    }
 
     const Item = ({ paymentData }) => {
         return (
             <TouchableOpacity
+                id={paymentData.paymentId}
                 activeOpacity={0.5}
+                onPress={() => { openPaymentInfoDialog(paymentData) }}
                 style={styles.listButton}>
                 <View style={{ flexDirection: "column", flexGrow: 1 }}>
                     <Text style={{ flex: 1, fontSize: 18 }}>{paymentData.concepto}</Text>
@@ -164,7 +319,9 @@ const PaymentsTable = () => {
                             <Image source={require("../../../assets/user_payment.png")} style={{ tintColor: "#177245", width: 28, height: 28 }} />
                         </TouchableOpacity> : null
                 }
-                <Image source={require("../../../assets/info.png")} style={{ tintColor: "gray", width: 28, height: 28 }} />
+                <Image
+                    source={require("../../../assets/info.png")}
+                    style={{ tintColor: "gray", width: 28, height: 28 }} />
             </TouchableOpacity>
         )
     }
@@ -178,13 +335,14 @@ const PaymentsTable = () => {
                     <Spinner /> :
                     <>
                         <PaymentModal />
+                        <PaymentInfoModal />
                         <FlatList
                             ItemSeparatorComponent={<View style={{ height: "3%", backgroundColor: "gray" }} />}
                             scrollEnabled={false}
-                            style={{ height: 180 }}
+                            style={{ height: 200 }}
                             data={paymentsData}
                             renderItem={({ item }) => <Item paymentData={item} />}
-                            keyExtractor={item => item._id}
+                            keyExtractor={item => item.paymentId}
                         />
                         <TouchableOpacity style={{ marginTop: 18, marginBottom: 12, justifyContent: "center", alignItems: "center" }}>
                             <Text style={{ color: "#0092b7", fontWeight: "bold" }}>
@@ -232,15 +390,15 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 0
+        marginTop: 12
     },
     modalView: {
         margin: 20,
         backgroundColor: 'white',
         borderRadius: 20,
-        padding: 12,
+        padding: 20,
         width: "80%",
-        height: "35%",
+        height: "50%",
         alignItems: 'flex-start',
         shadowColor: '#000',
         shadowOffset: {
@@ -252,8 +410,8 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     modalContent: {
-        flex: 1, flexDirection: "column",
-        height: "40%"
+        flex: 1,
+        flexDirection: "column"
     },
     modalRow: {
         flexDirection: "row",
