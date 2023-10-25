@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "AwesomeProject",
-    "slug": "AwesomeProject",
+    "name": "SiconadMobile",
+    "slug": "SiconadMobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/endelogo.png",
@@ -25,6 +25,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1cda3dd5-66c3-4a69-85e4-55a923ae1a69"
+      }
     }
   }
 }

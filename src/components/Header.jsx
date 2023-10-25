@@ -14,6 +14,7 @@ export default function Header() {
 
     useEffect(() => {
         getSessionData().then(data => {
+            console.log(data.matricula);
             setSessionInfo(data);
         }).catch(err => {
             console.log(`Header EX: ${err}`)
@@ -66,7 +67,7 @@ export default function Header() {
                     </View>
                     <View>
                         <Text style={styles.title}>{sessionInfo.nombre}</Text>
-                        <Text style={styles.subtitle}>{sessionInfo.grupo}</Text>
+                        <Text style={styles.subtitle}>{sessionInfo.matricula}</Text>
                         <Text style={styles.subtitle}>{sessionInfo.planacademico}</Text>
                     </View>
                     <View>
