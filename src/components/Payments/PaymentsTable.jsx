@@ -5,6 +5,7 @@ import axios from "axios"
 import { getPaymentTokenData, getSessionData, getTokenData } from "../../helpers/AStorage";
 import Spinner from "../../components/Spinner";
 import BoldSimpleText from "../Texts/BoldSimple";
+import { useNavigation, StackActions } from '@react-navigation/native'
 
 const PaymentsTable = () => {
     const [paymentsData, setPaymentsData] = useState([]);
@@ -14,6 +15,7 @@ const PaymentsTable = () => {
     const [paymentModalData, setPaymentModalData] = useState({});
     const [paymentInfoData, setPaymentInfoData] = useState({});
     const [userSession, setUserSession] = useState({});
+    const { dispatch } = useNavigation()
 
     const sortDates = (a, b) => {
         var d1 = new Date(a.fecha)
@@ -58,8 +60,8 @@ const PaymentsTable = () => {
 
 
     useEffect(() => {
-        console.log(paymentModalData)
-    }, [paymentModalData]);
+        console.log(paymentsData)
+    }, [paymentsData]);
 
 
     function openPaymentDialog(item) {
@@ -305,7 +307,7 @@ const PaymentsTable = () => {
     const Item = ({ paymentData }) => {
         return (
             <TouchableOpacity
-                id={paymentData.paymentId}
+                key={paymentData.autorizacion}
                 activeOpacity={0.5}
                 onPress={() => { openPaymentInfoDialog(paymentData) }}
                 style={styles.listButton}>
@@ -342,9 +344,11 @@ const PaymentsTable = () => {
                             style={{ height: 200 }}
                             data={paymentsData}
                             renderItem={({ item }) => <Item paymentData={item} />}
-                            keyExtractor={item => item.paymentId}
+                            keyExtractor={item => item.autorizacion}
                         />
-                        <TouchableOpacity style={{ marginTop: 18, marginBottom: 12, justifyContent: "center", alignItems: "center" }}>
+                        <TouchableOpacity 
+                            onPress={() => dispatch(StackActions.push("TableDetails", { component_to_render: "payments" }))}
+                            style={{ marginTop: 18, marginBottom: 12, justifyContent: "center", alignItems: "center" }}>
                             <Text style={{ color: "#0092b7", fontWeight: "bold" }}>
                                 VER M&Aacute;S
                             </Text>

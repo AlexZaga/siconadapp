@@ -5,6 +5,7 @@ import { useNavigation, StackActions } from '@react-navigation/native'
 import SubjectsDataTable from "../components/TableDetails/SubjectsData";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import NewsDataTable from "../components/TableDetails/NewsData";
+import PaymentsDataTable from "../components/TableDetails/PaymentsData";
 
 
 export default function TableDetails({ route: { params: { component_to_render } }}) {
@@ -23,7 +24,8 @@ export default function TableDetails({ route: { params: { component_to_render } 
             <GestureHandlerRootView>
                 {
                     component_to_render === "subjects" ? <SubjectsDataTable /> : 
-                        component_to_render === "news" ? <NewsDataTable /> : null
+                        component_to_render === "news" ? <NewsDataTable /> : 
+                        component_to_render === "payments" ? <PaymentsDataTable /> : null
                 }
             </GestureHandlerRootView>
         </ScrollView>

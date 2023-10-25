@@ -5,7 +5,7 @@ const API_PATHS = {
     "logout": "/system/logout",
     "news": "/comunicados/all",
     "plans": "/planes/fetch",
-    "subjects": "/asignaturas/plan/",
+    "subjects": "/alumnos/asignaturas/",
     "payments": "/pagos/get_pagos_alumno/",
     "acc_status": "/indicadores_cajas/get_estado_cuenta_alumno",
     "abono": "/abonos/add_abono/"

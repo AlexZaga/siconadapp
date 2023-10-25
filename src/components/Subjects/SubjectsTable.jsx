@@ -18,23 +18,30 @@ const SubjectsTable = () => {
         try {
             const token = await getTokenData();
             const userInfo = await getSessionData()
-            const plans_url = API_BASE_URL.concat(API_PATHS.plans);
-            const plansReq = await axios.get(plans_url, { headers: { "Authorization": `Bearer ${token}` } })
-            const planes = plansReq.data.data;
-            const planInfo = planes.filter((x) => x["nombre"] === userInfo["planacademico"])
-            if (planInfo.length === 0){
-                console.log("No se ha encontrado el plan de estudios asignado al alumno");
-                return null;
-            }
-            const planId = planInfo[0]["_id"]
-            const subjects_url = API_BASE_URL.concat(API_PATHS.subjects).concat(planId)
-            const subsReq = await axios.get(subjects_url, { headers: { "Authorization": `Bearer ${token}` } })
+            const subjects_url = API_BASE_URL.concat(API_PATHS.subjects).concat(userInfo.matricula);
+            console.log(subjects_url);
+            const plansReq = await axios.get(subjects_url, { headers: { "Authorization": `Bearer ${token}` } })
 
-            return subsReq
+            const {data} = plansReq;
+            const reqStatus = data.status;
+            const subjectsArr = data.data;
+
+            if (reqStatus === "200"){
+                return subjectsArr
+            }else{
+                console.log("Ha ocurrido un error al obtener las materias");
+                return []
+            }
 
         } catch (ex) {
-            console.log(ex);
-            return null;
+            console.log("Exception on Subjects Fetch")
+            if (ex.response.status === 404){
+                console.log("El alumno no tiene materias");
+                return [];
+            }else {
+                console.log(ex);
+                return null;
+            }
         }
     }
 
@@ -42,8 +49,8 @@ const SubjectsTable = () => {
         (async () => {
             setIsLoading(true);
             const subjects = await fetchSubjects();
-            if ( subjects && subjects.status === 200) {
-                const preSubjects = subjects.data.data.slice(0, 3);
+            if (subjects) {
+                const preSubjects = subjects.slice(0, 3);
                 console.log(preSubjects);
                 setSubjectsData(preSubjects)
             }else{
@@ -74,11 +81,14 @@ const SubjectsTable = () => {
                     activeOpacity={0.5}
                     style={styles.listButton}>
                     <Text style={{ flex: 1, fontSize: 16 }}>
-                        {subjectData.asignatura}
+                        {subjectData.nombremateria}
+                    </Text>
+                    <Text style={{ flex: 1, fontSize: 14, fontWeight: "bold" }}>
+                        {subjectData.nombreclase}
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                style={{ justifyContent: "center", flex: 1 }}
+                style={{ justifyContent: "center", flex: 1, alignItems: "center" }}
                     activeOpacity={0.5} 
                     onPress={() => { openSubjectsModal(subjectData) }}>
                     <Image source={require("../../../assets/info.png")} style={{ tintColor: "gray", width: 28, height: 28 }} />
@@ -96,13 +106,43 @@ const SubjectsTable = () => {
                 onRequestClose={() => setSubjectsModalVisible(!subjectsModalVisible)}>
                 <View style={styles.centeredView}>
                     <View style={styles.modalView}>
-                        <Text style={styles.headerText}>{selectedSubjectsItem.asignatura}</Text>
+                        <Text style={styles.headerText}>{selectedSubjectsItem.nombremateria}</Text>
                         <View style={styles.divisor} />
                         <View style={styles.modalContent}>
                             <View style={styles.modalRow}>
                                 <BoldSimpleText
                                     boldText={"Plan:"}
-                                    normalText={selectedSubjectsItem.productoNombre}
+                                    normalText={selectedSubjectsItem.nombreplan}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Clase:"}
+                                    normalText={selectedSubjectsItem.nombreclase}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Matricula:"}
+                                    normalText={selectedSubjectsItem.matricula}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Calificacion de Materia:"}
+                                    normalText={selectedSubjectsItem.calificacionmateria}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Actividades en Clase:"}
+                                    normalText={selectedSubjectsItem.actividadesclase ? selectedSubjectsItem.actividadesclase.length : 0}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Actividades Entregadas:"}
+                                    normalText={selectedSubjectsItem.documentos ? selectedSubjectsItem.documentos.length : 0}
                                     fontSize={16} />
                             </View>
                         </View>
@@ -149,14 +189,19 @@ const SubjectsTable = () => {
                             style={{ height: "100%" }}
                             data={subjectsData}
                             renderItem={({ item }) => <Item subjectData={item} />}
-                            keyExtractor={item => item._id}
+                            keyExtractor={item => item.matricula}
                         />
                         <TouchableOpacity 
                             onPress={() => dispatch(StackActions.push("TableDetails", { component_to_render: "subjects" }))}
                             style={{ marginTop: 18, marginBottom: 12, justifyContent: "center", alignItems: "center" }}>
-                            <Text style={{ color: "#0092b7", fontWeight: "bold" }}>
-                                VER M&Aacute;S
-                            </Text>
+                            {
+                                subjectsData.length > 3 ? 
+                                    <Text style={{ color: "#0092b7", fontWeight: "bold" }}>
+                                        VER M&Aacute;S
+                                    </Text> :
+                                    null
+                            }
+                            
                         </TouchableOpacity>
                     </>
             }
@@ -187,12 +232,12 @@ const styles = StyleSheet.create({
         width: "40%"
     },
     listButton: {
-        flexDirection: "row",
+        flexDirection: "column",
         minHeight: 52,
         margin: 8,
         flex: 4,
-        alignItems: "center",
-        justifyContent: "center",
+        alignItems: "flex-start",
+        justifyContent: "flex-start",
         paddingStart: 12,
         paddingEnd: 12
     },
@@ -208,7 +253,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 20,
         width: "80%",
-        height: "35%",
+        height: "45%",
         alignItems: 'flex-start',
         shadowColor: '#000',
         shadowOffset: {
