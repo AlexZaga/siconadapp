@@ -15,20 +15,22 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rodr16020.SiconadMobile"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.rodr16020.SiconadMobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "1cda3dd5-66c3-4a69-85e4-55a923ae1a69"
+        "projectId": "f3f9e22b-7257-4f38-b88c-4f72bccada2e"
       }
     }
   }
