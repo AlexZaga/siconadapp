@@ -60,7 +60,7 @@ export default function Header() {
         )
     } else {
         return (
-            <SafeAreaView style={{height: 120, marginStart: 12, marginEnd: 12}}>
+            <SafeAreaView style={{height: 120, margin: 14}}>
                 <View style={styles.container} >
                     <View>
                         <Image source={{ uri: user_male_image }} style={styles.image} />

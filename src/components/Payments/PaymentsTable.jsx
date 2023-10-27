@@ -51,10 +51,16 @@ const PaymentsTable = () => {
         setIsLoading(false);
     }
 
-    useEffect( async () => {
-        await loadPayments();
-        const userData = await getSessionData();
-        setUserSession(userData);
+    useEffect(() => {
+        setIsLoading(true);
+        loadPayments().then(async () => {
+            const userData = await getSessionData();
+            setUserSession(userData);
+        }).catch(error => {
+            console.log(error);
+        }).finally(() => {
+            setIsLoading(false);
+        });
         console.log("Loaded Data from Payments");
     }, []);
 
@@ -394,7 +400,9 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 12
+        marginTop: 12,
+        backgroundColor: "#F5F5F5",
+        //opacity: 0.5
     },
     modalView: {
         margin: 20,

@@ -1,13 +1,13 @@
 import React from "react";
 import { Text } from "react-native";
 
-const BoldSimpleText = ({ boldText, normalText, fontSize = 16 }) => {
+const BoldSimpleText = ({ boldText, normalText, fontSize = 16, boldExtraStyle = {}, simpleExtraStyle = {} }) => {
     return (
         <>
-            <Text style={{ fontSize, fontWeight: "bold" }}>
+            <Text style={{ fontSize, fontWeight: "bold", ...boldExtraStyle }}>
                 {boldText}&nbsp;
             </Text>
-            <Text style={{ fontSize }}>
+            <Text style={{ fontSize, ...simpleExtraStyle }}>
                 {normalText}
             </Text>
         </>

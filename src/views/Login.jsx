@@ -67,7 +67,7 @@ export default function Home() {
       dispatch(StackActions.replace("Dashboard"))
     }catch (error){
       console.log("On error")
-      console.log(error);
+      console.log(error.response);
     }finally {
       setLoading(false);
     }

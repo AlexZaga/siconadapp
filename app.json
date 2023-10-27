@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SiconadMobile",
-    "slug": "SiconadMobile",
+    "slug": "siconad-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/endelogo.png",
@@ -20,7 +20,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/endelogo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.rodr16020.SiconadMobile"

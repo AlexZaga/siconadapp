@@ -131,6 +131,7 @@ const SubjectsTable = () => {
                                 <BoldSimpleText
                                     boldText={"Calificacion de Materia:"}
                                     normalText={selectedSubjectsItem.calificacionmateria}
+                                    simpleExtraStyle={{ color: selectedSubjectsItem.acreditado ? "#000" : "red"}}
                                     fontSize={16} />
                             </View>
                             <View style={styles.modalRow}>
@@ -186,7 +187,7 @@ const SubjectsTable = () => {
                         <FlatList
                             ItemSeparatorComponent={<View style={{ height: "3%", backgroundColor: "gray" }} />}
                             scrollEnabled={false}
-                            style={{ height: "100%" }}
+                            style={{ height: 240 }}
                             data={subjectsData}
                             renderItem={({ item }) => <Item subjectData={item} />}
                             keyExtractor={item => item.matricula}

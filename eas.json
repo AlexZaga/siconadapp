@@ -7,8 +7,15 @@
       "developmentClient": true,
       "distribution": "internal"
     },
+    "preview_srv": {
+      "android": {
+				"buildType": "apk"
+			}
+    },
     "preview": {
-      "distribution": "internal"
+      "android":{
+				"gradleCommand": ":app:assembleRelease"
+			}
     },
     "production": {}
   },
