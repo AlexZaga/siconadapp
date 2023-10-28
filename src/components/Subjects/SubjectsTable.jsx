@@ -19,7 +19,7 @@ const SubjectsTable = () => {
             const token = await getTokenData();
             const userInfo = await getSessionData()
             const subjects_url = API_BASE_URL.concat(API_PATHS.subjects).concat(userInfo.matricula);
-            console.log(subjects_url);
+            //console.log(subjects_url);
             const plansReq = await axios.get(subjects_url, { headers: { "Authorization": `Bearer ${token}` } })
 
             const {data} = plansReq;
@@ -50,9 +50,9 @@ const SubjectsTable = () => {
             setIsLoading(true);
             const subjects = await fetchSubjects();
             if (subjects) {
-                const preSubjects = subjects.slice(0, 3);
-                console.log(preSubjects);
-                setSubjectsData(preSubjects)
+                //const preSubjects = subjects.slice(0, 3);
+                //console.log(preSubjects);
+                setSubjectsData(subjects);
             }else{
                 alert("Ha ocurrido un error al obtener los datos de las asignaturas");
             }
@@ -131,7 +131,7 @@ const SubjectsTable = () => {
                                 <BoldSimpleText
                                     boldText={"Calificacion de Materia:"}
                                     normalText={selectedSubjectsItem.calificacionmateria}
-                                    simpleExtraStyle={{ color: selectedSubjectsItem.acreditado ? "#000" : "red"}}
+                                    simpleExtraStyle={{ color: selectedSubjectsItem.acreditado ? "#246BCE" : "red"}}
                                     fontSize={16} />
                             </View>
                             <View style={styles.modalRow}>
@@ -188,9 +188,9 @@ const SubjectsTable = () => {
                             ItemSeparatorComponent={<View style={{ height: "3%", backgroundColor: "gray" }} />}
                             scrollEnabled={false}
                             style={{ height: 240 }}
-                            data={subjectsData}
+                            data={subjectsData.slice(0, 3)}
                             renderItem={({ item }) => <Item subjectData={item} />}
-                            keyExtractor={item => item.matricula}
+                            keyExtractor={item => item.nombreclase}
                         />
                         <TouchableOpacity 
                             onPress={() => dispatch(StackActions.push("TableDetails", { component_to_render: "subjects" }))}
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 20,
         width: "80%",
-        height: "45%",
+        height: "55%",
         alignItems: 'flex-start',
         shadowColor: '#000',
         shadowOffset: {

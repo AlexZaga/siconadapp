@@ -23,8 +23,8 @@ const SubjectsDataTable = () => {
         (async () => {
             setIsLoading(true);
             const subjects = await fetchSubjects();
-            if (subjects && subjects.status === 200) {
-                const preSubjects = subjects.data.data
+            if (subjects) {
+                const preSubjects = subjects;
                 console.log(preSubjects);
                 setSubjectsList(preSubjects)
             } else {
@@ -38,23 +38,30 @@ const SubjectsDataTable = () => {
         try {
             const token = await getTokenData();
             const userInfo = await getSessionData()
-            const plans_url = API_BASE_URL.concat(API_PATHS.plans);
-            const plansReq = await axios.get(plans_url, { headers: { "Authorization": `Bearer ${token}` } })
-            const planes = plansReq.data.data;
-            const planInfo = planes.filter((x) => x["nombre"] === userInfo["planacademico"])
-            if (planInfo.length === 0) {
-                console.log("No se ha encontrado el plan de estudios asignado al alumno");
-                return null;
-            }
-            const planId = planInfo[0]["_id"]
-            const subjects_url = API_BASE_URL.concat(API_PATHS.subjects).concat(planId)
-            const subsReq = await axios.get(subjects_url, { headers: { "Authorization": `Bearer ${token}` } })
+            const subjects_url = API_BASE_URL.concat(API_PATHS.subjects).concat(userInfo.matricula);
+            //console.log(subjects_url);
+            const plansReq = await axios.get(subjects_url, { headers: { "Authorization": `Bearer ${token}` } })
 
-            return subsReq
+            const { data } = plansReq;
+            const reqStatus = data.status;
+            const subjectsArr = data.data;
+
+            if (reqStatus === "200") {
+                return subjectsArr
+            } else {
+                console.log("Ha ocurrido un error al obtener las materias");
+                return []
+            }
 
         } catch (ex) {
-            console.log(ex);
-            return null;
+            console.log("Exception on Subjects Fetch")
+            if (ex.response.status === 404) {
+                console.log("El alumno no tiene materias");
+                return [];
+            } else {
+                console.log(ex);
+                return null;
+            }
         }
     }
 
@@ -78,13 +85,44 @@ const SubjectsDataTable = () => {
                 onRequestClose={() => setSubjectsModalVisible(!subjectsModalVisible)}>
                 <View style={styles.centeredView}>
                     <View style={styles.modalView}>
-                        <Text style={styles.headerText}>{selectedSubjectsItem.asignatura}</Text>
+                        <Text style={styles.headerText}>{selectedSubjectsItem.nombremateria}</Text>
                         <View style={styles.divisor} />
                         <View style={styles.modalContent}>
                             <View style={styles.modalRow}>
                                 <BoldSimpleText
                                     boldText={"Plan:"}
-                                    normalText={selectedSubjectsItem.productoNombre}
+                                    normalText={selectedSubjectsItem.nombreplan}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Clase:"}
+                                    normalText={selectedSubjectsItem.nombreclase}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Matricula:"}
+                                    normalText={selectedSubjectsItem.matricula}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Calificacion de Materia:"}
+                                    normalText={selectedSubjectsItem.calificacionmateria}
+                                    simpleExtraStyle={{ color: selectedSubjectsItem.acreditado ? "#246BCE" : "red" }}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Actividades en Clase:"}
+                                    normalText={selectedSubjectsItem.actividadesclase ? selectedSubjectsItem.actividadesclase.length : 0}
+                                    fontSize={16} />
+                            </View>
+                            <View style={styles.modalRow}>
+                                <BoldSimpleText
+                                    boldText={"Actividades Entregadas:"}
+                                    normalText={selectedSubjectsItem.documentos ? selectedSubjectsItem.documentos.length : 0}
                                     fontSize={16} />
                             </View>
                         </View>
@@ -126,8 +164,8 @@ const SubjectsDataTable = () => {
                     <Spinner /> :
                     <DataTable>
                         <DataTable.Header>
-                            <DataTable.Title textStyle={styles.tableHeader}>Asignatura</DataTable.Title>
-                            <DataTable.Title textStyle={styles.tableHeader}>Plan de Estudios</DataTable.Title>
+                            <DataTable.Title textStyle={styles.tableHeader}>Materia</DataTable.Title>
+                            <DataTable.Title textStyle={styles.tableHeader}>Clase</DataTable.Title>
                             <DataTable.Title textStyle={styles.tableHeader}>
                                 Informaci&oacute;n
                             </DataTable.Title>
@@ -137,19 +175,18 @@ const SubjectsDataTable = () => {
                             <DataTable.Row key={item.asignaturaId} onPress={(i) => { openSubjectsModal(item) }}>
                                 <DataTable.Cell>
                                     <Text>
-                                        {item.asignatura}
+                                        {item.nombremateria}
                                     </Text>
                                 </DataTable.Cell>
                                 <DataTable.Cell>
                                     <Text>
-                                        {item.productoNombre}
+                                        {item.nombreclase}
                                     </Text>
                                 </DataTable.Cell>
                                 <DataTable.Cell>
                                     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
                                         <Image source={require("../../../assets/info.png")} style={{ tintColor: "gray", width: 28, height: 28 }} />
                                     </View>
-                                    
                                 </DataTable.Cell>
                             </DataTable.Row>
                         ))}
@@ -170,7 +207,7 @@ const SubjectsDataTable = () => {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        flex: 0,
         margin: 12
     },
     headerText: {
@@ -204,7 +241,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 20,
         width: "80%",
-        height: "35%",
+        height: "55%",
         alignItems: 'flex-start',
         shadowColor: '#000',
         shadowOffset: {

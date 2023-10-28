@@ -6,11 +6,15 @@ import { useNavigation, StackActions } from '@react-navigation/native'
 import { deleteItem, getSessionData, getTokenData, saveSessionData, saveTokenData } from "../helpers/AStorage"
 import { SafeAreaView } from "react-native-safe-area-context"
 import axios from "axios"
+import { useStateContext } from "../helpers/Context"
+import { ActivityIndicator } from "react-native-paper"
 
 export default function Header() {
     const [sessionInfo, setSessionInfo] = useState({});
     const [loading, setLoading] = useState(false)
-    const { dispatch } = useNavigation()
+    const navDispatch = useNavigation().dispatch
+    const { state, dispatch } = useStateContext();
+
 
     useEffect(() => {
         getSessionData().then(data => {
@@ -27,7 +31,7 @@ export default function Header() {
 
         const tk = await getTokenData();
 
-        if (!tk){
+        if (!tk) {
             alert("Ha ocurrido un error al obtener los datos guardados del usuario.");
             setLoading(true);
             return
@@ -42,8 +46,8 @@ export default function Header() {
             "Authorization": `Bearer ${tk}`,
             "Content-Type": "application/json"
         }
-        
-        const logoutReq = await axios.post(logout_url, logoutData, {headers} );
+
+        const logoutReq = await axios.post(logout_url, logoutData, { headers });
 
         console.log(logoutReq.data);
 
@@ -51,34 +55,46 @@ export default function Header() {
         await deleteItem("token_pay");
         await deleteItem("user_session")
 
-        dispatch(StackActions.replace("Bienvenido"));
+        navDispatch(StackActions.replace("Bienvenido"));
     }
 
-    if (loading) {
-        return (
-            <Spinner />
-        )
-    } else {
-        return (
-            <SafeAreaView style={{height: 120, margin: 14}}>
-                <View style={styles.container} >
-                    <View>
-                        <Image source={{ uri: user_male_image }} style={styles.image} />
-                    </View>
-                    <View>
-                        <Text style={styles.title}>{sessionInfo.nombre}</Text>
-                        <Text style={styles.subtitle}>{sessionInfo.matricula}</Text>
-                        <Text style={styles.subtitle}>{sessionInfo.planacademico}</Text>
-                    </View>
-                    <View>
-                        <TouchableOpacity style={styles.buttonClose} onPress={logoutUser}>
-                            <Text style={styles.buttonText}>Cerrar</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </SafeAreaView>
-        )
+    const handleBack = () => {
+        navDispatch(StackActions.pop(1));
+        dispatch({ type: "TOOGLE_BUTTON" })
     }
+
+    return (
+        <SafeAreaView style={{ marginTop: 12, marginBottom: 12, marginEnd: 8, marginStart: 8 }}>
+            <View style={styles.container} >
+                {
+                    state.showBackButton ?
+                        <TouchableOpacity
+                            activeOpacity={0.5}
+                            style={{ width: 24, height: 24, justifyContent: "center", alignItems: "center" }}
+                            onPress={handleBack}>
+                            <Image source={require("../../assets/back.png")} style={{ width: 24, height: 24 }} />
+                        </TouchableOpacity> : null
+                }
+                <View style={{ margin: !state.showBackButton ? 12 : 0 }}>
+                    <Image source={{ uri: user_male_image }} style={styles.image} />
+                </View>
+                <View>
+                    <Text style={styles.title}>{sessionInfo.nombre}</Text>
+                    <Text style={styles.subtitle}>{sessionInfo.matricula}</Text>
+                    <Text style={styles.subtitle}>{sessionInfo.planacademico}</Text>
+                </View>
+                <View>
+                    {
+                        loading ? <ActivityIndicator size="small" color="#0000ff" /> :
+                            <TouchableOpacity style={styles.buttonClose} onPress={logoutUser}>
+                                <Text style={styles.buttonText}>Cerrar</Text>
+                            </TouchableOpacity>
+                    }
+
+                </View>
+            </View>
+        </SafeAreaView>
+    )
 }
 
 const styles = StyleSheet.create({
@@ -91,7 +107,8 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         borderWidth: 1,
         borderColor: 'white',
-        padding: 8,
+        paddingTop: 8,
+        paddingBottom: 8
     },
     leftContainer: {
         flex: 1,
@@ -110,8 +127,8 @@ const styles = StyleSheet.create({
         color: '#000'
     },
     image: {
-        width: 45,
-        height: 45,
+        width: 38,
+        height: 38,
         borderRadius: 30,
     },
     buttonClose: {

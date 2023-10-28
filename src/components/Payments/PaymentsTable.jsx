@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 20,
         width: "80%",
-        height: "50%",
+        height: "60%",
         alignItems: 'flex-start',
         shadowColor: '#000',
         shadowOffset: {

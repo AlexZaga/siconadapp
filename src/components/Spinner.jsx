@@ -17,11 +17,10 @@ export default function Spinner({ mensaje }) {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "gainsboro"
+        backgroundColor: "transparent"
     },
     processText: {
         fontSize: 35,

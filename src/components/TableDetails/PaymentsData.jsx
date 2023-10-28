@@ -1,39 +1,92 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Image, Modal, FlatList } from "react-native";
+import { View, Text, StyleSheet, Image, Modal, FlatList, Pressable } from "react-native";
 import { getSessionData, getTokenData, getPaymentTokenData } from "../../helpers/AStorage";
 import { API_BASE_URL, API_PATHS, API_PAYMENT_BASE_URL } from "../../../assets/js/globals";
 import axios from "axios";
 import Spinner from "../Spinner";
-import { ScrollView, TouchableOpacity } from "react-native-gesture-handler";
+import { GestureHandlerRootView, TouchableOpacity } from "react-native-gesture-handler";
 import BoldSimpleText from "../Texts/BoldSimple";
+
 
 const PaymentsDataTable = () => {
     const totalTableItems = 5;
-    const [originalPaymentsList, setOriginalPaymentsList] = useState([]);
-    const [paymentsList, setPaymentsList] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [paymentsModalVisible, setPaymentsModalVisible] = useState(false);
     const [selectedPaymentItem, setSelectedPaymentItem] = useState({});
-    const [page, setPage] = useState(0);
+    const [originalPaymentsList, setOriginalPaymentsList] = useState([]);
+    const [paymentsList, setPaymentsList] = useState([]);
     const [startIndex, setStartIndex] = useState(0);
-    const [endIndex, setEndIndex] = useState(totalTableItems);
+    const [endIndex, setEndIndex] = useState(5);
+    const [page, setPage] = useState(0);
     const listRef = useRef(null);
 
-    useEffect(() => {
-        loadPayments().then(() => {
-            console.log(`Init Config: Pg: ${page} - Sidx: ${startIndex} - Eidx: ${endIndex} - Total Items: ${originalPaymentsList.length}`);
-        })
-        
-    }, []);
+    const fetchPayments = async () => {
+        try {
+            const token = await getPaymentTokenData();
+            const userInfo = await getSessionData()
+            const payments_url = API_PAYMENT_BASE_URL.concat(API_PATHS.payments).concat(userInfo["matricula"]);
+            var payReq = await axios.get(payments_url, { headers: { "Authorization": `Bearer ${token}` } })
+            return payReq;
+        } catch (ex) {
+            console.log(ex);
+            return null;
+        }
+    }
+
+    async function loadPayments() {
+        setIsLoading(true);
+        const paymentsData = await fetchPayments();
+        if (paymentsData.status === 200) {
+            const sortedPayments = paymentsData.data.data;
+            setOriginalPaymentsList(sortedPayments);
+        }
+        setIsLoading(false);
+    }
 
     useEffect(() => {
-        const newStartIdx = page * totalTableItems;
-        const newEndIdx = Math.min(newStartIdx + totalTableItems, originalPaymentsList.length);
-        setStartIndex(newStartIdx);
-        setEndIndex(newEndIdx);
-        setPaymentsList(originalPaymentsList.slice(newStartIdx, newEndIdx));
-        listRef.current.scrollToOffset({ animated: true, offset: 0 });
+        setIsLoading(true);
+        loadPayments().then(() => {
+            //const userData = await getSessionData();
+            //setUserSession(userData);
+        }).catch(error => {
+            console.log(error);
+        }).finally(() => {
+            setIsLoading(false);
+        });
+        console.log("Loaded Data from Payments");
+    }, []);
+
+
+    useEffect(() => {
+        console.log(originalPaymentsList)
+        if (originalPaymentsList.length > 0){
+            console.log(`SIDX: ${startIndex} - EIDX: ${endIndex}`);
+            const filteredList = originalPaymentsList.slice(startIndex, endIndex);
+            console.log(filteredList);
+            setPaymentsList(filteredList);
+        }
+        if (listRef.current) {
+            listRef.current.scrollToOffset({ animated: true, offset: 0 });
+        }
+
+    }, [originalPaymentsList]);
+
+    useEffect(() => {
+        if (originalPaymentsList.length > 0){
+            const newStartIdx = page * totalTableItems;
+            const newEndIdx = Math.min(newStartIdx + totalTableItems, originalPaymentsList.length);
+            setStartIndex(newStartIdx);
+            setEndIndex(newEndIdx);
+            setPaymentsList(originalPaymentsList.slice(newStartIdx, newEndIdx));
+            if (listRef.current) {
+                listRef.current.scrollToOffset({ animated: true, offset: 0 });
+            }
+        }
     }, [page]);
+
+    useEffect(() => {
+        console.log(`Loaded ${paymentsList.length} items`)
+    }, [paymentsList]);
 
     function openPaymentDialog(item) {
         setSelectedPaymentItem(item);
@@ -45,25 +98,7 @@ const PaymentsDataTable = () => {
         setPaymentsModalVisible(false);
     }
 
-    const loadPayments = async () => {
-        const userSession = await getSessionData();
-        const token = await getPaymentTokenData();
-        setIsLoading(true);
-        const payments_url = API_PAYMENT_BASE_URL.concat(API_PATHS.payments).concat(userSession["matricula"]);
-        try {
-            const paymentsRequest = await axios.get(payments_url, { headers: { "Authorization": `Bearer ${token}` } })
-            const payments = paymentsRequest.data.data;
-            setOriginalPaymentsList(payments);
-            setPaymentsList(payments.slice(startIndex, endIndex));
-        } catch (ex) {
-            console.log("Ha ocurrido un error al obtener los datos de pagos");
-            console.log(ex);
-        } finally {
-            setIsLoading(false);
-        }
-    }
-
-    const submitPayment = async () => {
+    async function submitPayment() {
         let tipoPago =
             selectedPaymentItem["concepto"] === "Pago de Inscripción" ? 1
                 : selectedPaymentItem["concepto"] === "Pago de certificación" ? 3
@@ -95,6 +130,7 @@ const PaymentsDataTable = () => {
         }
         axios.post(API_PAYMENT_BASE_URL.concat(API_PATHS.abono), paymentPayload, { headers: paymentHeaders }).then(r => {
             if (r.status !== 200) {
+                setPaymentsModalVisible(false);
                 alert("Ha ocurrido un error al realizar el abono. Intente de nuevo.");
             } else {
                 const { autorizacion } = r.data.data;
@@ -107,10 +143,12 @@ const PaymentsDataTable = () => {
             }
         }).catch(error => {
             console.log(error)
-        }).finally(async () => {
-            await loadPayments();
-            setSelectedPaymentItem({});
-            setPaymentsModalVisible(false);
+        }).finally(() => {
+            loadPayments().then(() => {
+                console.log("Reloaded Payments")
+                setSelectedPaymentItem({});
+                setPaymentsModalVisible(false);
+            })
         });
     }
 
@@ -120,7 +158,7 @@ const PaymentsDataTable = () => {
                 animationType="slide"
                 transparent={true}
                 visible={paymentsModalVisible}
-                onRequestClose={() => setPaymentsModalVisible(!paymentsModalVisible)}>
+                onRequestClose={() => setPaymentsModalVisible(false)}>
                 <View style={styles.centeredView}>
                     <View style={styles.modalView}>
                         <Text style={styles.headerText}>{selectedPaymentItem.concepto}</Text>
@@ -161,14 +199,12 @@ const PaymentsDataTable = () => {
                         <View
                             style={{
                                 backgroundColor: "white",
-                                width: "100%",
                                 flexDirection: "row",
                                 justifyContent: "center",
                                 alignItems: "center"
                             }}>
-                            <TouchableOpacity
-                                activeOpacity={0.5}
-                                onPress={submitPayment}
+                            <Pressable
+                                onPress={async () => { await submitPayment() }}
                                 style={{ padding: 8 }}>
                                 <Text style={{
                                     color: "#0092b7",
@@ -178,10 +214,9 @@ const PaymentsDataTable = () => {
                                 }}>
                                     Realizar Pago
                                 </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                            </Pressable>
+                            <Pressable
                                 onPress={handleClosePayModal}
-                                activeOpacity={0.5}
                                 style={{ padding: 8 }}>
                                 <Text style={{
                                     color: "#960018",
@@ -191,7 +226,7 @@ const PaymentsDataTable = () => {
                                 }}>
                                     Cancelar Pago
                                 </Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     </View>
                 </View>
@@ -199,6 +234,28 @@ const PaymentsDataTable = () => {
         );
     }
 
+    const PaymentsPaginator = () => {
+        return (
+            <View style={{ margin: 24, alignItems: "flex-end", flexDirection: "row", justifyContent: "flex-end" }}>
+                <Pressable
+                    disabled={page === 0}
+                    style={{ width: 52, height: 52 }}
+                    onPress={() => { setPage(page - 1) }}>
+                    <Image source={require("../../../assets/back.png")} style={{ tintColor: page !== 0 ? "#000" : "gray", width: 42, height: 42 }} />
+                </Pressable>
+                <Pressable
+                    disabled={endIndex === originalPaymentsList.length}
+                    style={{ width: 52, height: 52 }}
+                    onPress={() => { setPage(page + 1) }}>
+                    <Image source={require("../../../assets/next.png")}
+                        style={{
+                            tintColor: endIndex === originalPaymentsList.length ? "gray" : "#000",
+                            width: 42, height: 42
+                        }} />
+                </Pressable>
+            </View>
+        )
+    }
 
     const PaymentItem = ({ paymentData }) => {
         return (
@@ -267,7 +324,7 @@ const PaymentsDataTable = () => {
                     }}>
                         {
                             paymentData.estatusPago !== "pagado" ?
-                                <TouchableOpacity
+                                <Pressable
                                     activeOpacity={0.5}
                                     style={{ width: 64, height: 64 }}
                                     onPress={() => { openPaymentDialog(paymentData) }}>
@@ -276,7 +333,7 @@ const PaymentsDataTable = () => {
                                             tintColor: "#177245",
                                             width: 42, height: 42
                                         }} />
-                                </TouchableOpacity> : null
+                                </Pressable> : null
                         }
                     </View>
                 </View>
@@ -285,59 +342,43 @@ const PaymentsDataTable = () => {
     }
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.headerText}>Calendario de Pagos</Text>
-            <View style={styles.divisor} />
-            <PaymentModal />
-            {
-                isLoading ?
-                    <Spinner /> :
-                    <View>
-                        <FlatList
-                            ref={listRef}
-                            ItemSeparatorComponent={<View style={{
-                                height: 2,
-                                backgroundColor: "gray",
-                                width: "80%",
-                                margin: "auto",
-                                justifyContent: "center",
-                                alignItems: "center", alignSelf: "center", alignContent: "center"
-                            }} />}
-                            scrollEnabled={true}
-                            style={{ height: 480 }}
-                            data={paymentsList}
-                            renderItem={({ item }) => <PaymentItem paymentData={item} />}
-                        />
-                        <View style={{ margin: 24, alignItems: "flex-end", flexDirection: "row", justifyContent: "flex-end" }}>
-                            <TouchableOpacity
-                                disabled={page === 0}
-                                activeOpacity={0.5}
-                                style={{ width: 64, height: 64 }}
-                                onPress={() => setPage(page - 1)}>
-                                <Image source={require("../../../assets/back.png")} style={{ tintColor: page !== 0 ? "#000" : "gray", width: 42, height: 42 }} />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                disabled={endIndex === originalPaymentsList.length}
-                                activeOpacity={0.5}
-                                style={{ width: 64, height: 64 }}
-                                onPress={() => setPage(page + 1)}>
-                                <Image source={require("../../../assets/next.png")}
-                                    style={{
-                                        tintColor: endIndex === originalPaymentsList.length ? "gray" : "#000",
-                                        width: 42, height: 42
-                                    }} />
-                            </TouchableOpacity>
+        <GestureHandlerRootView>
+            <View style={styles.container}>
+                <Text style={styles.headerText}>Calendario de Pagos</Text>
+                <View style={styles.divisor} />
+                <PaymentModal />
+                {
+                    isLoading ?
+                        <Spinner /> :
+                        <View>
+                            <FlatList
+                                ref={listRef}
+                                ItemSeparatorComponent={<View style={{
+                                    height: 2,
+                                    backgroundColor: "gray",
+                                    width: "80%",
+                                    margin: "auto",
+                                    justifyContent: "center",
+                                    alignItems: "center", alignSelf: "center", alignContent: "center"
+                                }} />}
+                                scrollEnabled={true}
+                                style={{ height: 480 }}
+                                data={paymentsList}
+                                initialNumToRender={5}
+                                renderItem={({ item }) => <PaymentItem paymentData={item} />}
+                            />
+                            <PaymentsPaginator />
+                                
                         </View>
-                    </View>
-
-            }
-        </View>
+                }
+            </View>
+        </GestureHandlerRootView>
     )
 }
 
+
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
         margin: 12
     },
     headerText: {
@@ -372,7 +413,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 20,
         width: "80%",
-        height: "35%",
+        height: "60%",
         alignItems: 'flex-start',
         shadowColor: '#000',
         shadowOffset: {
@@ -393,6 +434,6 @@ const styles = StyleSheet.create({
         marginTop: 8,
         marginBottom: 8
     }
-})
+});
 
 export default PaymentsDataTable;

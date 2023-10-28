@@ -130,7 +130,13 @@ const NewsDataTable = () => {
             <NewsInfoModal />
             {
                 isLoading ?
-                    <Spinner /> :
+                    <View 
+                        style={{ 
+                            justifyContent: "center", 
+                            alignItems: "center", 
+                            alignContent: "center" }}>
+                        <Spinner />
+                    </View> :
                     <DataTable>
                         <DataTable.Header>
                             <DataTable.Title textStyle={styles.tableHeader}>Nombre del comunicado</DataTable.Title>
@@ -170,7 +176,7 @@ const NewsDataTable = () => {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        flex: 0,
         margin: 12
     },
     headerText: {
