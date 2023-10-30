@@ -8,17 +8,27 @@ import { useNavigation, StackActions } from '@react-navigation/native'
 export default function Splash({ navigation }) {
   const image = { uri: background_splash }
   const [isUsrLogged, setUsrLogged] = useState(false);
+  const [sessionData, setSessionData] = useState({});
 
   useEffect(() => {
     getSessionData().then(data => {
       console.log("User Data Stored:");
       console.log(data);
-      setUsrLogged(data && "nombre" in data && data["nombre"] !== "");
+      setUsrLogged(data && data["_id"] !== "");
+      setSessionData(data);
     }).catch(e => {
       console.log("Error al recuperar datos desde el almacenamiento local");
       console.log(e);
     });
   }, []);
+
+  const validateRoute = () => {
+    if (sessionData["orgNivel"] === "PRES"){
+      navigation.navigate('PresDashboard')
+    }else{
+      navigation.navigate('Dashboard')
+    }
+  }
 
   return (
     <>
@@ -33,7 +43,7 @@ export default function Splash({ navigation }) {
               !isUsrLogged ? <TouchableOpacity onPress={() => navigation.dispatch(StackActions.replace('AHJ ENDE'))} style={styles.button}>
                 <Text style={styles.buttonText}>Iniciar Sesi&oacute;n</Text>
               </TouchableOpacity> :
-                <TouchableOpacity onPress={() => navigation.navigate('Dashboard')} style={styles.button}>
+                <TouchableOpacity onPress={validateRoute} style={styles.button}>
                   <Text style={styles.buttonText}>Inicio</Text>
                 </TouchableOpacity>
             }</View>

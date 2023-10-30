@@ -5,6 +5,7 @@ import Splash from './Splash'
 import Login from './Login'
 import Dashboard from './Dashboard'
 import TableDetails from './TableDetails'
+import PresDashboard from './PresidentDashboard/PresDashboard'
 
 const Stack = createNativeStackNavigator()
 
@@ -16,6 +17,7 @@ export default function App() {
           <Stack.Screen name='AHJ ENDE' component={Login} options={{ animationTypeForReplace: 'push' }} />
           <Stack.Screen name='Dashboard' component={Dashboard} options={{ animationTypeForReplace: 'push' }} />
           <Stack.Screen name='TableDetails' component={TableDetails} options={{ animationTypeForReplace: 'push' }} />
+          <Stack.Screen name='PresDashboard' component={PresDashboard} options={{ animationTypeForReplace: 'push' }} />
         </Stack.Navigator>
       </NavigationContainer>
   )

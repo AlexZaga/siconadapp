@@ -41,7 +41,7 @@ export default function Dashboard() {
           source={t.image}
           style={styles.imageButton}
         />
-        <Text adjustsFontSizeToFit style={styles.textButton}>{t.title}</Text>
+        <Text adjustsFontSizeToFit={true} style={styles.textButton}>{t.title}</Text>
       </TouchableOpacity>
     )
   }
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   },
   textButton: {
     color: "#0092b7",
-    fontSize: 18,
+    fontSize: 14,
     textAlign: "center",
     padding: 8
   }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, Modal } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, Modal, Pressable } from "react-native";
 import { API_BASE_URL, API_PATHS } from "../../../assets/js/globals";
 import axios from "axios"
 import { getSessionData, getTokenData } from "../../helpers/AStorage";
@@ -51,7 +51,7 @@ const SubjectsTable = () => {
             const subjects = await fetchSubjects();
             if (subjects) {
                 //const preSubjects = subjects.slice(0, 3);
-                //console.log(preSubjects);
+                //console.log(subjects);
                 setSubjectsData(subjects);
             }else{
                 alert("Ha ocurrido un error al obtener los datos de las asignaturas");
@@ -76,14 +76,15 @@ const SubjectsTable = () => {
         return (
             <View style={{ 
                 flexDirection: "row", 
+                margin: 0,
                 justifyContent:"space-between"}}>
                 <TouchableOpacity
                     activeOpacity={0.5}
                     style={styles.listButton}>
-                    <Text style={{ flex: 1, fontSize: 16 }}>
+                    <Text style={{ flex: 1, fontSize: 16, fontWeight: "bold" }}>
                         {subjectData.nombremateria}
                     </Text>
-                    <Text style={{ flex: 1, fontSize: 14, fontWeight: "bold" }}>
+                    <Text style={{ flex: 1, fontSize: 14, flexWrap: "wrap" }}>
                         {subjectData.nombreclase}
                     </Text>
                 </TouchableOpacity>
@@ -155,8 +156,7 @@ const SubjectsTable = () => {
                                 justifyContent: "center",
                                 alignItems: "center"
                             }}>
-                            <TouchableOpacity
-                                activeOpacity={0.5}
+                            <Pressable
                                 onPress={handleCloseSubjectsModal}
                                 style={{ padding: 8, width: "80%", justifyContent: "center", alignItems: "center" }}>
                                 <Text style={{
@@ -167,7 +167,7 @@ const SubjectsTable = () => {
                                 }}>
                                     Cerrar Informaci&oacute;n
                                 </Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     </View>
                 </View>
@@ -187,26 +187,22 @@ const SubjectsTable = () => {
                         <FlatList
                             ItemSeparatorComponent={<View style={{ height: "3%", backgroundColor: "gray" }} />}
                             scrollEnabled={false}
-                            style={{ height: 240 }}
+                            style={{ height: "100%" }}
                             data={subjectsData.slice(0, 3)}
                             renderItem={({ item }) => <Item subjectData={item} />}
                             keyExtractor={item => item.nombreclase}
                         />
-                        <TouchableOpacity 
-                            onPress={() => dispatch(StackActions.push("TableDetails", { component_to_render: "subjects" }))}
-                            style={{ marginTop: 18, marginBottom: 12, justifyContent: "center", alignItems: "center" }}>
-                            {
-                                subjectsData.length > 3 ? 
-                                    <Text style={{ color: "#0092b7", fontWeight: "bold" }}>
-                                        VER M&Aacute;S
-                                    </Text> :
-                                    null
-                            }
-                            
-                        </TouchableOpacity>
+                        {
+                            subjectsData.length > 3 ? <TouchableOpacity
+                                onPress={() => dispatch(StackActions.push("TableDetails", { component_to_render: "subjects" }))}
+                                style={{ marginTop: 18, marginBottom: 12, justifyContent: "center", alignItems: "center" }}>
+                                <Text style={{ color: "#0092b7", fontWeight: "bold" }}>
+                                    VER M&Aacute;S
+                                </Text>
+                            </TouchableOpacity> : null
+                        }
                     </>
             }
-            
         </View>
     )
 }

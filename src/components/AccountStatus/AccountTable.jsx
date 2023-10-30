@@ -1,31 +1,38 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, PixelRatio, Modal } from "react-native";
-import { API_PATHS, API_PAYMENT_BASE_URL } from "../../../assets/js/globals";
+import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, Modal } from "react-native";
+import { API_BASE_URL, API_PATHS } from "../../../assets/js/globals";
 import axios from "axios"
-import { getPaymentTokenData, getSessionData } from "../../helpers/AStorage";
+import { getSessionData, getTokenData } from "../../helpers/AStorage";
 import Spinner from "../../components/Spinner";
 import BoldSimpleText from "../Texts/BoldSimple";
+import { useNavigation, StackActions } from '@react-navigation/native'
+
+const defSelectedItem = {
+    "concepto": "",
+    "estatuspago": "",
+    "vencimiento": "",
+    "mes": "",
+    "autorizacion": "",
+    "monto": 0,
+    "montoPagado": 0
+}
 
 const AccountStatusTable = () => {
     const [accountStatus, setAccountStatus] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const [accModalVisible, setAccModalVisible] = useState(false);
-    const [selectedAccStatusItem, setAccStatusItem] = useState({});
-    const fontScale = PixelRatio.getFontScale();
-    const getFontSize = size => size / fontScale;
+    const [selectedAccStatusItem, setAccStatusItem] = useState(defSelectedItem);
+    const [transList, setTransList] = useState([]);
+    //const fontScale = PixelRatio.getFontScale();
+    const { dispatch } = useNavigation()
+    //const getFontSize = size => size / fontScale;
 
     const fetchAccStatus = async () => {
         try {
-            const token = await getPaymentTokenData();
+            const token = await getTokenData();
             const userInfo = await getSessionData()
-            const payments_url = API_PAYMENT_BASE_URL.concat(API_PATHS.acc_status);
-            const actualYear = new Date().getFullYear().toString();
-            const payload = {
-                "fechaInicio": `${actualYear}-01-01`,
-                "fechaFin": `${actualYear}-12-31`,
-                "id": userInfo["matricula"]
-            }
-            var payReq = await axios.post(payments_url, payload, { headers: { "Authorization": `Bearer ${token}` } })
+            const acc_status_url = API_BASE_URL.concat(API_PATHS.status_cuenta).concat(userInfo["matricula"]);
+            var payReq = await axios.get(acc_status_url, { headers: { "Authorization": `Bearer ${token}` } })
             return payReq;
         } catch (ex) {
             console.log(ex);
@@ -37,19 +44,19 @@ const AccountStatusTable = () => {
         (async () => {
             setIsLoading(true);
             const accStatus = await fetchAccStatus();
-            console.log(accStatus.data)
-            if (accStatus.status === 200) {
-                //console.log(accStatus.data)
+            if ( accStatus && accStatus.status === 200) {
                 setAccountStatus(accStatus.data.data);
+                setTransList(accStatus.data.data["transacciones"]);
+            }else {
+                alert("No se han encontrado datos del estado de cuenta del alumno");
             }
             setIsLoading(false);
         })();
-        console.log("Loaded Data from AccStatus");
     }, []);
 
     useEffect(() => {
-        console.log(accountStatus)
-    }, [accountStatus])
+        console.log(transList.slice(0,3))
+    }, [transList])
 
     function openAccStatusModal(item) {
         setAccStatusItem(item);
@@ -57,7 +64,7 @@ const AccountStatusTable = () => {
     }
 
     const handleCloseAccStatusModal = () => {
-        setAccStatusItem({});
+        setAccStatusItem(defSelectedItem);
         setAccModalVisible(false);
     }
 
@@ -70,44 +77,46 @@ const AccountStatusTable = () => {
                 onRequestClose={() => setAccModalVisible(!accModalVisible)}>
                 <View style={styles.centeredView}>
                     <View style={styles.modalView}>
-                        <Text style={styles.headerText}>{selectedAccStatusItem.concepto}</Text>
+                        <Text style={styles.headerText}>{selectedAccStatusItem["concepto"]}</Text>
                         <View style={styles.divisor} />
                         <View style={styles.modalContent}>
                             <View style={styles.modalRow}>
                                 <BoldSimpleText
                                     boldText={"Estatus del Pago:"}
-                                    normalText={selectedAccStatusItem.canalPago}
-                                    fontSize={16} />
+                                    normalText={
+                                        selectedAccStatusItem["estatuspago"].toUpperCase()
+                                    }
+                                    fontSize={12} />
                             </View>
                             <View style={styles.modalRow}>
                                 <BoldSimpleText
                                     boldText={"Fecha de Vencimiento:"}
-                                    normalText={selectedAccStatusItem.vencimiento}
-                                    fontSize={16} />
+                                    normalText={selectedAccStatusItem["vencimiento"]}
+                                    fontSize={12} />
                             </View>
                             <View style={styles.modalRow}>
                                 <BoldSimpleText
                                     boldText={"Mes de Pago:"}
-                                    normalText={selectedAccStatusItem.mes}
-                                    fontSize={16} />
+                                    normalText={selectedAccStatusItem["mes"]}
+                                    fontSize={12} />
                             </View>
                             <View style={styles.modalRow}>
                                 <BoldSimpleText
                                     boldText={"Monto de Factura:"}
-                                    normalText={`$${selectedAccStatusItem.monto.toLocaleString()} MXN`}
-                                    fontSize={16} />
+                                    normalText={`$${selectedAccStatusItem["monto"].toLocaleString()} MXN`}
+                                    fontSize={12} />
                             </View>
                             <View style={styles.modalRow}>
                                 <BoldSimpleText
                                     boldText={"Monto Pagado:"}
                                     normalText={`$${selectedAccStatusItem.montoPagado.toLocaleString()} MXN`}
-                                    fontSize={16} />
+                                    fontSize={12} />
                             </View>
                             <View style={styles.modalRow}>
                                 <BoldSimpleText
-                                    boldText={"ID de Pago:"}
-                                    normalText={selectedAccStatusItem.pagoId}
-                                    fontSize={16} />
+                                    boldText={"Autorizacion:"}
+                                    normalText={selectedAccStatusItem.autorizacion}
+                                    fontSize={12} />
                             </View>
                         </View>
                         <View
@@ -153,7 +162,8 @@ const AccountStatusTable = () => {
                     style={styles.listButton}>
                     <View style={{ flexDirection: "column", flexGrow: 1 }}>
                         <Text style={{ flex: 1, fontSize: 18 }}>{accData.concepto}</Text>
-                        <Text style={{ flex: 1, fontSize: 12 }}>{accData.fecha} - {accData.canalPago}</Text>
+                        <Text style={{ flex: 1, fontSize: 12 }}>
+                        {accData.fecha} - {accData.canalPago === 1 ? "Efectivo" : accData.canalPago === 2 ? "Banco" : "No Pagado"}</Text>
                     </View>
                 </TouchableOpacity>
                 <TouchableOpacity 
@@ -172,40 +182,31 @@ const AccountStatusTable = () => {
         return (
             <View>
                 <View style={{ flex: 1, flexDirection: "row", justifyContent: "flex-start", alignItems: "center", marginTop: 8 }}>
-                    <Text adjustsFontSizeToFit style={{ fontSize: getFontSize(18), fontWeight: "bold" }}>
-                        Monto Pagado:&nbsp;
-                    </Text>
-                    <Text adjustsFontSizeToFit style={{ fontSize: getFontSize(18) }}>
-                        ${
-                            accountStatus["pagado"] ? accountStatus.pagado.toLocaleString("es-MX") : 0.0
-                        }
-                        MXN
-                    </Text>
+                    <BoldSimpleText
+                        boldText={"Monto Pagado: "}
+                        normalText={`${accountStatus["montoPagado"] ? accountStatus["montoPagado"].toLocaleString("es-MX") : 0.0}MXN`}
+                    />
                 </View>
-                <View adjustsFontSizeToFit
-                    style={{ flex: 1, flexDirection: "row", justifyContent: "flex-start", alignItems: "center", marginTop: 8, marginBottom: 8 }}>
-                    <Text style={{ fontSize: 18, fontWeight: "bold" }}>
-                        Monto Pendiente:&nbsp;
-                    </Text>
-                    <Text adjustsFontSizeToFit style={{ fontSize: 18 }}>
-                        ${
-                            accountStatus["por pagar"] ? accountStatus["por pagar"].toLocaleString("es-MX") : 0.0
-                        }
-                        MXN
-                    </Text>
+                <View style={{ flex: 1, flexDirection: "row", justifyContent: "flex-start", alignItems: "center", marginTop: 8 }}>
+                    <BoldSimpleText
+                        boldText={"Monto Pendiente: "}
+                        normalText={`${accountStatus["montoPendiente"] ? accountStatus["montoPendiente"].toLocaleString("es-MX") : 0.0}MXN`}
+                    />
                 </View>
-                <View style={{ padding: 0 }}>
+                <View style={{ marginTop: 12, display: transList.length > 0 ? "flex" : "none" }}>
                     <FlatList
                         ItemSeparatorComponent={<View style={{ height: "3%", backgroundColor: "gray" }} />}
                         scrollEnabled={false}
                         style={{ height: 180 }}
-                        data={accountStatus["detalle"]}
+                        data={transList.slice(0, 3)}
                         renderItem={({ item }) => <Item accData={item} />}
-                        keyExtractor={item => item.pagoId}
+                        keyExtractor={item => item._id}
                     />
                     {
-                        accountStatus["detalle"] && accountStatus["detalle"].length > 3 ?
-                            <TouchableOpacity style={{ marginTop: 18, marginBottom: 12, justifyContent: "center", alignItems: "center" }}>
+                        transList.length > 3 ?
+                            <TouchableOpacity 
+                                onPress={() => dispatch(StackActions.push("TableDetails", { component_to_render: "acc_status" }))}
+                                style={{ marginTop: 18, marginBottom: 12, justifyContent: "center", alignItems: "center" }}>
                                 <Text style={{ color: "#0092b7", fontWeight: "bold" }}>
                                     VER M&Aacute;S
                                 </Text>
@@ -220,10 +221,7 @@ const AccountStatusTable = () => {
         <View style={styles.container}>
             <Text style={styles.headerText}>Estado de Cuenta</Text>
             <View style={styles.divisor} />
-            {
-                selectedAccStatusItem["pagoId"] ? <AccStatusModal /> : null
-            }
-
+            <AccStatusModal />
             {
                 isLoading ? <Spinner /> :
                     <AccStatusCard />
@@ -275,7 +273,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 20,
         width: "80%",
-        height: "45%",
+        height: "55%",
         alignItems: 'flex-start',
         shadowColor: '#000',
         shadowOffset: {

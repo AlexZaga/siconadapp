@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Image, Modal } from "react-native";
+import { View, Text, StyleSheet, Image, Modal, Pressable } from "react-native";
 import { DataTable } from 'react-native-paper';
 import { getSessionData, getTokenData } from "../../helpers/AStorage";
 import { API_BASE_URL, API_PATHS } from "../../../assets/js/globals";
@@ -134,8 +134,7 @@ const SubjectsDataTable = () => {
                                 justifyContent: "center",
                                 alignItems: "center"
                             }}>
-                            <TouchableOpacity
-                                activeOpacity={0.5}
+                            <Pressable
                                 onPress={handleCloseSubjectsModal}
                                 style={{ padding: 8, width: "100%", justifyContent: "center", alignItems: "center" }}>
                                 <Text style={{
@@ -146,7 +145,7 @@ const SubjectsDataTable = () => {
                                 }}>
                                     Cerrar Informaci&oacute;n
                                 </Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     </View>
                 </View>
@@ -172,14 +171,14 @@ const SubjectsDataTable = () => {
                         </DataTable.Header>
 
                         {subjectsList.slice(from, to).map((item) => (
-                            <DataTable.Row key={item.asignaturaId} onPress={(i) => { openSubjectsModal(item) }}>
+                            <DataTable.Row key={item.nombreclase} onPress={(i) => { openSubjectsModal(item) }}>
                                 <DataTable.Cell>
-                                    <Text>
+                                    <Text style={{ fontSize: 12 }}>
                                         {item.nombremateria}
                                     </Text>
                                 </DataTable.Cell>
                                 <DataTable.Cell>
-                                    <Text>
+                                    <Text style={{ fontSize: 12 }}>
                                         {item.nombreclase}
                                     </Text>
                                 </DataTable.Cell>

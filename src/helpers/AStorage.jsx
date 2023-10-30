@@ -61,6 +61,26 @@ const getPaymentTokenData = async () => {
     }
 }
 
+const addItem = async (key, value) => {
+    try {
+        await AsyncStorage.setItem(key, value);
+        return true;
+    } catch (e) {
+        console.log(e);
+        return false;
+    }
+}
+
+const getItem = async (key) => {
+    try {
+        const savedItem = await AsyncStorage.getItem(key);
+        return savedItem;
+    } catch (e) {
+        console.log(e);
+        return null;
+    }
+}
+
 const deleteItem = async (key) => {
     try{
         await AsyncStorage.removeItem(key);
@@ -75,4 +95,5 @@ export {
     saveSessionData, getSessionData, 
     saveTokenData, getTokenData, 
     deleteItem, getPaymentTokenData, 
+    addItem, getItem,
     savePaymentTokenData }

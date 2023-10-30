@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react"
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native"
 import { user_fem_image, user_male_image, API_BASE_URL, API_PATHS } from '../../assets/js/globals'
-import Spinner from "./Spinner"
 import { useNavigation, StackActions } from '@react-navigation/native'
-import { deleteItem, getSessionData, getTokenData, saveSessionData, saveTokenData } from "../helpers/AStorage"
+import { deleteItem, getSessionData, getTokenData, getItem } from "../helpers/AStorage"
 import { SafeAreaView } from "react-native-safe-area-context"
 import axios from "axios"
 import { useStateContext } from "../helpers/Context"
@@ -18,12 +17,36 @@ export default function Header() {
 
     useEffect(() => {
         getSessionData().then(data => {
-            console.log(data.matricula);
-            setSessionInfo(data);
+            if (data["matricula"]){
+                console.log("Estudiante")
+                //Estudiante
+                setSessionInfo({
+                    "user_name": data["nombre"],
+                    "user_id": data["matricula"],
+                    "extra": data["planacademico"],
+                    "orgCorreo": data["orgCorreo"],
+                    "type": "student"
+                });
+            }else {
+                console.log("Administrativo")
+                setSessionInfo({
+                    "user_name": data["orgNombre"],
+                    "user_id": data["orgCorreo"],
+                    "extra": data["orgNivelDescripcion"],
+                    "type": data["orgNivel"]
+                });
+            }
+            console.log(data);
+            //setSessionInfo(data);
         }).catch(err => {
             console.log(`Header EX: ${err}`)
         });
     }, []);
+
+    useEffect(() => {
+        console.log("Header session data:");
+        console.log(sessionInfo)
+    }, [sessionInfo]);
 
     const logoutUser = async () => {
         setLoading(true);
@@ -37,9 +60,18 @@ export default function Header() {
             return
         }
 
-        const logoutData = {
-            "user": sessionInfo.matricula,
-            "password": sessionInfo.orgCorreo
+        var logoutData = {}
+
+        if (sessionInfo["type"] === "student"){
+            logoutData = {
+                "user": sessionInfo["user_id"],
+                "password": sessionInfo["orgCorreo"]
+            }
+        }else {
+            const adminTk = await getItem("adminToken");
+            logoutData = {
+                "tokenhash": adminTk
+            }
         }
 
         const headers = {
@@ -54,6 +86,9 @@ export default function Header() {
         await deleteItem("token")
         await deleteItem("token_pay");
         await deleteItem("user_session")
+        if (sessionInfo["type"] !== "student") {
+            await deleteItem("adminToken")
+        }
 
         navDispatch(StackActions.replace("Bienvenido"));
     }
@@ -79,9 +114,9 @@ export default function Header() {
                     <Image source={{ uri: user_male_image }} style={styles.image} />
                 </View>
                 <View>
-                    <Text style={styles.title}>{sessionInfo.nombre}</Text>
-                    <Text style={styles.subtitle}>{sessionInfo.matricula}</Text>
-                    <Text style={styles.subtitle}>{sessionInfo.planacademico}</Text>
+                    <Text style={styles.title}>{sessionInfo.user_name}</Text>
+                    <Text style={styles.subtitle}>{sessionInfo.user_id}</Text>
+                    <Text style={styles.subtitle}>{sessionInfo.extra}</Text>
                 </View>
                 <View>
                     {

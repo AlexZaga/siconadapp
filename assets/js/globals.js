@@ -8,7 +8,10 @@ const API_PATHS = {
     "subjects": "/alumnos/asignaturas/",
     "payments": "/pagos/get_pagos_alumno/",
     "acc_status": "/indicadores_cajas/get_estado_cuenta_alumno",
-    "abono": "/abonos/add_abono/"
+    "status_cuenta": "/pagos/edocuenta/",
+    "payments_mat": "/pagos/matricula/",
+    //"abono": "/abonos/add_abono/",
+    "abono": "/pagos/add"
 }
 
 const background_image = "https://res.cloudinary.com/interprocsysmex/image/upload/v1673644266/ahjende/ofertaeducativa/ofedu-img8_dqbsre.jpg"

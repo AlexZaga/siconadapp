@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, Modal, Pressable } from "react-native";
-import { API_PATHS, API_PAYMENT_BASE_URL } from "../../../assets/js/globals";
+import { API_BASE_URL, API_PATHS, API_PAYMENT_BASE_URL } from "../../../assets/js/globals";
 import axios from "axios"
 import { getPaymentTokenData, getSessionData, getTokenData } from "../../helpers/AStorage";
 import Spinner from "../../components/Spinner";
@@ -30,13 +30,17 @@ const PaymentsTable = () => {
 
     const fetchPayments = async () => {
         try {
-            const token = await getPaymentTokenData();
+            const token = await getTokenData();
             const userInfo = await getSessionData()
-            const payments_url = API_PAYMENT_BASE_URL.concat(API_PATHS.payments).concat(userInfo["matricula"]);
+            //const payments_url = API_PAYMENT_BASE_URL.concat(API_PATHS.payments).concat(userInfo["matricula"]);
+            const payments_url = API_BASE_URL.concat(API_PATHS.payments_mat).concat(userInfo["matricula"]);
             var payReq = await axios.get(payments_url, { headers: { "Authorization": `Bearer ${token}` } })
             return payReq;
         } catch (ex) {
             console.log(ex);
+            if (ex.response){
+                console.log(ex.response.data);
+            }
             return null;
         }
     }
@@ -45,7 +49,7 @@ const PaymentsTable = () => {
         setIsLoading(true);
         const paymentsData = await fetchPayments();
         if (paymentsData.status === 200) {
-            const sortedPayments = paymentsData.data.data.sort(sortDates).slice(0, 3);
+            const sortedPayments = paymentsData.data.data.sort(sortDates);
             setPaymentsData(sortedPayments);
         }
         setIsLoading(false);
@@ -176,10 +180,13 @@ const PaymentsTable = () => {
                                         fontSize={16} />
                                     <BoldSimpleText
                                         boldText={`$${paymentModalData.monto ? paymentModalData.monto.toLocaleString() : "0.0"} MXN,`}
-                                        normalText={"con folio de pago "}
+                                        normalText={"con folio de pago: "}
                                         fontSize={16} />
-                                    <Text style={styles.modalTextBold}>
-                                        {paymentModalData.pagoId}
+                                    <Text style={{
+                                        fontSize: 16,
+                                        fontWeight: "bold"
+                                    }}>
+                                        {paymentModalData._id}
                                     </Text>
                                 </Text>
                             </View>
@@ -271,7 +278,7 @@ const PaymentsTable = () => {
                             <View style={styles.modalRow}>
                                 <BoldSimpleText
                                     boldText={"Estatus de Pago:"}
-                                    normalText={paymentInfoData.estatusPago}
+                                    normalText={paymentInfoData.estatuspago ? paymentInfoData.estatuspago.toUpperCase() : ""}
                                     fontSize={16} />
                             </View>
                             <View style={styles.modalRow}>
@@ -348,17 +355,20 @@ const PaymentsTable = () => {
                             ItemSeparatorComponent={<View style={{ height: "3%", backgroundColor: "gray" }} />}
                             scrollEnabled={false}
                             style={{ height: 200 }}
-                            data={paymentsData}
+                            data={paymentsData.slice(0, 3)}
                             renderItem={({ item }) => <Item paymentData={item} />}
                             keyExtractor={item => item.autorizacion}
                         />
-                        <TouchableOpacity 
-                            onPress={() => dispatch(StackActions.push("TableDetails", { component_to_render: "payments" }))}
-                            style={{ marginTop: 18, marginBottom: 12, justifyContent: "center", alignItems: "center" }}>
-                            <Text style={{ color: "#0092b7", fontWeight: "bold" }}>
-                                VER M&Aacute;S
-                            </Text>
-                        </TouchableOpacity>
+                        {
+                            paymentsData.length > 3 ? <TouchableOpacity
+                                onPress={() => dispatch(StackActions.push("TableDetails", { component_to_render: "payments" }))}
+                                style={{ marginTop: 18, marginBottom: 12, justifyContent: "center", alignItems: "center" }}>
+                                <Text style={{ color: "#0092b7", fontWeight: "bold" }}>
+                                    VER M&Aacute;S
+                                </Text>
+                            </TouchableOpacity> : null
+                        }
+                        
                     </>
             }
 
@@ -400,7 +410,6 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 12,
         backgroundColor: "#F5F5F5",
         //opacity: 0.5
     },
@@ -410,7 +419,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 20,
         width: "80%",
-        height: "60%",
+        height: "70%",
         alignItems: 'flex-start',
         shadowColor: '#000',
         shadowOffset: {
