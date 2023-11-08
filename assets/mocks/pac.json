@@ -1,0 +1,65 @@
+{
+    "nombrekpi": "KPI PAC",
+    "informe": [
+            {
+                "cde": "CUAU",
+                "informedatos": 18,
+                "citadosdata": 18,
+                "entrevistadata": 2,
+                "procesodata": 0,
+                "regresodata": 0,
+                "pacinicial": 0,
+                "pacfinal": 0
+            },
+            {
+                "cde": "NAUCA",
+                "informedatos": 0,
+                "citadosdata": 0,
+                "entrevistadata": 0,
+                "procesodata": 0,
+                "regresodata": 0,
+                "pacinicial": 0,
+                "pacfinal": 0
+            },
+            {
+                "cde": "PAC",
+                "informedatos": 9,
+                "citadosdata": 9,
+                "entrevistadata": 3,
+                "procesodata": 0,
+                "regresodata": 0,
+                "pacinicial": 0,
+                "pacfinal": 0
+            },
+            {
+                "cde": "ECA",
+                "informedatos": 1,
+                "citadosdata": 1,
+                "entrevistadata": 1,
+                "procesodata": 0,
+                "regresodata": 0,
+                "pacinicial": 0,
+                "pacfinal": 0
+            },
+            {
+                "cde": "QRO",
+                "informedatos": 8,
+                "citadosdata": 5,
+                "entrevistadata": 2,
+                "procesodata": 0,
+                "regresodata": 0,
+                "pacinicial": 0,
+                "pacfinal": 0
+            },
+            {
+                "cde": "SLP",
+                "informedatos": 1,
+                "citadosdata": 1,
+                "entrevistadata": 1,
+                "procesodata": 0,
+                "regresodata": 0,
+                "pacinicial": 0,
+                "pacfinal": 0
+            }
+    ]
+}
