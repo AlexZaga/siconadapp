@@ -1,10 +1,10 @@
 import React from "react"
 import { ActivityIndicator, StyleSheet, View, ImageBackground, Text } from "react-native"
-import { Storage } from '../components/Storage'
+import { ende_image } from "../../assets/js/globals"
 
 export default function Spinner({ mensaje }) {
-    const _objStorage = new Storage()
-    const image = { uri: _objStorage.getImageENDE()}
+    
+    const image = { uri: ende_image }
 
     return (
         <View style={styles.container}>
@@ -17,11 +17,10 @@ export default function Spinner({ mensaje }) {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "gainsboro"
+        backgroundColor: "transparent"
     },
     processText: {
         fontSize: 35,
