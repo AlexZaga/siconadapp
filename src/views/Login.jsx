@@ -1,117 +1,157 @@
-import React, { useState } from 'react'
-import { ImageBackground, StyleSheet, Text, View, TextInput, TouchableOpacity, Platform } from 'react-native'
+import React, { useState, useEffect } from 'react'
+import { ImageBackground, StyleSheet, Text, View, TextInput, TouchableOpacity, Platform, KeyboardAvoidingView } from 'react-native'
 import Spinner from '../components/Spinner'
-import { APP_API_URL, APP_API_LOGIN, APP_BEARER_KEY } from '../../assets/js/globals'
-import { Storage } from '../components/Storage'
-import { useNavigation } from '@react-navigation/native'
+import { API_BASE_URL, API_PATHS, background_image, payment_token, usr_token } from '../../assets/js/globals'
+import { useNavigation, StackActions } from '@react-navigation/native'
+import { saveSessionData, saveTokenData, savePaymentTokenData, deleteItem, addItem} from '../helpers/AStorage'
+import axios from 'axios'
 
-export default function Home(){
-  const _objStorage = new Storage()
-  const [ matricula, setMatricula ] = useState('')
-  const [ password, setPassword ] = useState('')
-  const [ loading, setLoading ] = useState(false)
-  const [ bgImage ] = useState({ uri: _objStorage.getBackgroundImage() })
-  const { navigate } = useNavigation()
+export default function Home() {
+  const [matricula, setMatricula] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false);
+  const [userType, setUserType] = useState("student");
+  const adminRegex = /^0x[0-9A-Za-z]{42}/;
+  const { dispatch } = useNavigation()
 
-  async function handleSubmit() {
-    try {
-      if(!matricula || !password){
-        setLoading(false)
-        alert('No es posible continuar con campos vacíos. Verifique, por favor.')
-        setMatricula('')
-        setPassword('')
-      }else{
-        setLoading(true)
-        let _url = APP_API_URL().concat(APP_API_LOGIN())
-        let _result = await fetch(_url, {
-          method: "POST",
-          cache: "no-cache",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": APP_BEARER_KEY()
-          },
-          body: JSON.stringify({
-            user: matricula,
-            password: password
-          })
-        })
-        let _data = await _result.json()
-        if(_data.status !== '404'){
-          let _nombre = _data.data.nombre
-          let _matricula = _data.data.matricula
-          let _cde = _data.data.cde
-          let _grupo = _data.data.grupo
-          let _plan = _data.data.planacademico
-          let _id = _data.data._id
-          let _correo = _data.data.orgCorreo
-          setLoading(false)
-          navigate('Dashboard', {_nombre, _matricula, _cde, _grupo, _plan, _id, _correo})
-        }else{
-          throw new Error(_data.message)
-        }
+  useEffect(() => {
+
+  }, []);
+
+  const validateHash = () => {
+    console.log("Validating user Type");
+    setUserType(adminRegex.test(matricula) ? "admin" : "student");
+  }
+
+  const loginUser = async () => {
+    if (!matricula || ( userType === "student" && !password)) {
+      alert('No es posible continuar con campos vacíos. Verifique, por favor.');
+      setMatricula("")
+      setPassword("");
+      return
+    }
+
+    setLoading(true);
+    const loginUrl = API_BASE_URL.concat(API_PATHS.login);
+    var loginPayload = {};
+
+    if (userType === "student"){
+      loginPayload = {
+        "user": matricula,
+        "password": password
       }
+    }else {
+      loginPayload = {
+        "tokenhash":  matricula
+      }
+    }
+
+    try {
+      const loginReq = await axios.post(loginUrl, loginPayload, { "headers": { "Accept": "application/json" } });
+
+      if (loginReq.status !== 200) {
+        alert("Ha ocurrido un error al iniciar sesion. Intente de nuevo.");
+        setLoading(false);
+        return
+      }
+      const { data } = loginReq.data;
+
+      console.log("Login Data: ");
+      console.log(data);
+
+      if (loginReq.data.status !== "200") {
+        alert(data.message);
+        setLoading(false);
+        return
+      }
+
+      const sessionStatus = await saveSessionData(data);
+      const tokenStatus = await saveTokenData(usr_token);
+      const tokenPayStatus = await savePaymentTokenData(payment_token);
+      var adminTokenStatus = true;
+      if (userType !== "student") {
+        adminTokenStatus = await addItem("adminToken", matricula);
+      }
+      
+      if (!sessionStatus || !tokenStatus || !tokenPayStatus || !adminTokenStatus) {
+        alert("Ha ocurrido un error al guardar la session de usuario. Intente de nuevo.")
+        setLoading(false);
+        await deleteItem("token");
+        await deleteItem("token_pay");
+        await deleteItem("user_session");
+        if (userType !== "student") {
+          await deleteItem("adminToken");
+        }
+        return
+      }
+      setLoading(false);
+      if (userType === "student"){
+        dispatch(StackActions.replace("Dashboard"))
+      }else{
+        dispatch(StackActions.replace("PresDashboard"))
+      }
+      
     } catch (error) {
-      setLoading(false)
-      alert(error)        
-    }finally{
-      setMatricula('')
-      setPassword('')
+      console.log("On error")
+      console.log(error);
+      alert("Ha ocurrido un error al iniciar sesion. Intente de nuevo.");
+    } finally {
+      setMatricula("");
+      setPassword("");
+      setUserType("student");
+      setLoading(false);
     }
   }
 
-  //Evaluate State
-  if(loading){
-    return (
-      <Spinner />
-    )
-  }else if(!loading){
-    return (
-      <>
-        <View style={styles.container}>
-          <ImageBackground source={bgImage} resizeMode="cover" style={styles.image} />
-        </View>
-        <View style={styles.form}>
-          <Text style={styles.text}>Matr&iacute;cula</Text>
-          <TextInput
-            id='matricula'
-            style={styles.input}
-            placeholder="Introduce tu Matricula"
-            onChangeText={newText => setMatricula(newText)}
-            defaultValue={matricula}
-          />
-          <Text style={styles.text}>Contrase&ntilde;a</Text>
-          <TextInput
-            id='pswd'
-            style={styles.input}
-            placeholder="Introduce tu contraseña"
-            onChangeText={newText => setPassword(newText)}
-            defaultValue={password}
-            secureTextEntry
-          />
-          {
-            Platform.OS === 'ios' && (<TouchableOpacity onPress={handleSubmit} style={styles.buttonIOS}><Text style={styles.buttonText}>Continuar...</Text></TouchableOpacity>)
-          }
-          {
-            Platform.OS === 'android' && (<TouchableOpacity onPress={handleSubmit} style={styles.buttonAND}><Text style={styles.buttonText}>Continuar...</Text></TouchableOpacity>)
-          }
-        </View>
-      </>
-    )
-  }else{
-    return (
-      <View></View>
-    )
-  }
+  return (
+    loading ? <Spinner /> :
+      <ImageBackground source={{ uri: background_image }} style={styles.image}>
+        <KeyboardAvoidingView style={{ flex: 1 }}>
+          <View style={{ flex: 1, justifyContent: "center" }}>
+            <Text style={styles.text}>Matr&iacute;cula</Text>
+            <TextInput
+              id='matricula'
+              style={styles.input}
+              placeholder="Introduce tu Matricula"
+              onEndEditing={validateHash}
+              onChangeText={newText => setMatricula(newText)}
+              defaultValue={matricula}
+            />
+            {
+              userType === "student" ? <>
+                <Text style={styles.text}>Contrase&ntilde;a</Text>
+                <TextInput
+                  id='pswd'
+                  style={styles.input}
+                  placeholder="Introduce tu contraseña"
+                  onChangeText={newText => setPassword(newText)}
+                  defaultValue={password}
+                  secureTextEntry
+                />
+              </> : null
+            }
+            <TouchableOpacity onPress={loginUser} style={Platform.OS == "android" ? styles.buttonAND : styles.buttonIOS}>
+              <Text style={styles.buttonText}>
+                Continuar...
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </ImageBackground>
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: "center"
   },
   image: {
     flex: 1,
-    justifyContent: 'center',
-    zIndex: 99
+    width: "100%",
+    height: "100%",
+    justifyContent: "center"
+    //zIndex: 99
   },
   text: {
     color: '#fff',
@@ -147,11 +187,11 @@ const styles = StyleSheet.create({
     margin: 12,
     alignItems: 'center',
     backgroundColor: '#000',
-    padding: 5,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#009999',
     borderRadius: 5,
-    marginBottom: 30
+    marginBottom: 0
   },
   buttonText: {
     color: '#009999',

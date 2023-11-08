@@ -1,22 +1,53 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Image, TouchableOpacity, ImageBackground, Platform } from 'react-native';
+import { background_splash, splash_image } from '../../assets/js/globals';
+import { getSessionData, saveSessionData } from "../helpers/AStorage";
+import { useNavigation, StackActions } from '@react-navigation/native'
 
 export default function Splash({ navigation }) {
-  const image = {uri: 'https://res.cloudinary.com/interprocsysmex/image/upload/v1673676986/ahjende/blognoticias/Blog-Noticias-img_noTexto_zjqkzb.png'}
+  const image = { uri: background_splash }
+  const [isUsrLogged, setUsrLogged] = useState(false);
+  const [sessionData, setSessionData] = useState({});
+
+  useEffect(() => {
+    getSessionData().then(data => {
+      console.log("User Data Stored:");
+      console.log(data);
+      setUsrLogged(data && data["_id"] !== "");
+      setSessionData(data);
+    }).catch(e => {
+      console.log("Error al recuperar datos desde el almacenamiento local");
+      console.log(e);
+    });
+  }, []);
+
+  const validateRoute = () => {
+    if (sessionData["orgNivel"] === "PRES"){
+      navigation.navigate('PresDashboard')
+    }else{
+      navigation.navigate('Dashboard')
+    }
+  }
 
   return (
     <>
       <View style={styles.container}>
         <ImageBackground source={image} resizeMode='cover' style={styles.image}>
-          <Image style={styles.tinylogo} source={{ uri: 'https://res.cloudinary.com/interprocsysmex/image/upload/v1674512758/ahjende/landpage/Logo_Sin_Texto_sdcvcf.png' }} />
+          <Image style={styles.tinylogo} source={{ uri: splash_image }} />
           <Text style={styles.mensaje}>Escuela de Negocios</Text>
           <Text style={styles.mensaje}>y</Text>
           <Text style={styles.mensaje}>Desarrollo Empresarial</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('AHJ ENDE')} style={styles.button}>
-            <Text style={styles.buttonText}>Iniciar Sesi&oacute;n</Text>
-          </TouchableOpacity>
-          <View style={{display: 'flex', flexDirection: 'column', alignItems:'flex-end', marginTop: 10 }}>
+          <View>
+            {
+              !isUsrLogged ? <TouchableOpacity onPress={() => navigation.dispatch(StackActions.replace('AHJ ENDE'))} style={styles.button}>
+                <Text style={styles.buttonText}>Iniciar Sesi&oacute;n</Text>
+              </TouchableOpacity> :
+                <TouchableOpacity onPress={validateRoute} style={styles.button}>
+                  <Text style={styles.buttonText}>Inicio</Text>
+                </TouchableOpacity>
+            }</View>
+          <View style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop: 10 }}>
             <Text style={styles.version}>&copy;&nbsp;2023 - v1.0.0</Text>
           </View>
           <StatusBar style="auto" hidden={true} />
@@ -40,13 +71,7 @@ const styles = StyleSheet.create({
     width: 350,
     height: 380,
   },
-  button : {
-    marginTop: 20,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: 'blue'
-  },
-  text : {
+  text: {
     color: '#fff'
   },
   spinner: {
@@ -58,7 +83,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 35
   },
-  version : {
+  version: {
     color: 'gainsboro',
     fontSize: 12,
     marginTop: 15
@@ -67,11 +92,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#009999',
     padding: 10,
     marginTop: 25,
-    borderRadius: 10,
+    borderRadius: 10
   },
   buttonText: {
     fontWeight: '400',
     color: '#ffffff'
-
   }
 })
